@@ -28,6 +28,11 @@ from iouEval import iouEval, getColorEntry
 
 from shutil import copyfile
 
+#rashad
+# import zipfile
+# from erfnet_pruned import *
+# from torchprofile import profile_macs
+
 NUM_CHANNELS = 3
 NUM_CLASSES = 20 #pascal=22, cityscapes=20
 
