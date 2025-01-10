@@ -5,7 +5,7 @@
 
 import numpy as np
 import torch
-import torch.nn.functional as F
+import torch.nn.functional as F  # msp, maxlogit, maxentropy 
 import os
 import importlib
 import time
@@ -63,12 +63,15 @@ def main(args):
             else:
                 own_state[name].copy_(param)
         return model
+    
+    # to add
+
 
     model = load_my_state_dict(model, torch.load(weightspath, map_location=lambda storage, loc: storage))
     print ("Model and weights LOADED successfully")
 
 
-    model.eval()
+    model.eval() # ok
 
     if(not os.path.exists(args.datadir)):
         print ("Error: datadir could not be loaded")
@@ -87,10 +90,22 @@ def main(args):
             labels = labels.cuda()
 
         inputs = Variable(images)
+
+        # ________________________ msp, max_logit, max_entropy _______________________ starts
+
         with torch.no_grad():
             outputs = model(inputs)
+        if args.method == 'msp':
+            softmax_probability = F.softmax(outputs, dim = 1)
+            anomaly_results = torch.argmax(softmax_probability, dim = 1).unsqueeze(1).data
+        elif args.method == 'max_logit':
+            anomaly_results = torch.argmax(outputs, dim = 1).unsqueeze(1).data
+        elif args.method == 'max_entropy':
+            anomaly_results = torch.argmax(F.softmax(outputs, dim = 1), dim = 1).unsqueeze(1).data
 
-        iouEvalVal.addBatch(outputs.max(1)[1].unsqueeze(1).data, labels)
+        iouEvalVal.addBatch(anomaly_results, labels)
+
+        # ________________________ msp, max_logit, max_entropy _______________________ ends
 
         filenameSave = filename[0].split("leftImg8bit/")[1] 
 
