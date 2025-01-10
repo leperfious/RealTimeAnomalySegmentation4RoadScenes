@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+# Copyright (c) OpenMMLab. All rights reserved.
 import os
 import cv2
 import glob
@@ -7,8 +8,10 @@ import random
 from PIL import Image
 import numpy as np
 from erfnet import ERFNet
+from erfnet_quantized import Net
 import os.path as osp
 from argparse import ArgumentParser
+from torchvision.transforms import Compose, Resize, ToTensor
 
 #metrics are being imported here **************
 
