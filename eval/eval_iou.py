@@ -97,13 +97,13 @@ def main(args):
             outputs = model(inputs)
         if args.method == 'msp':
             softmax_probability = F.softmax(outputs, dim = 1)
-            anomaly_results = torch.argmax(softmax_probability, dim = 1).unsqueeze(1).data
+            anomaly_result = torch.argmax(softmax_probability, dim = 1).unsqueeze(1).data
         elif args.method == 'max_logit':
-            anomaly_results = torch.argmax(outputs, dim = 1).unsqueeze(1).data
+            anomaly_result = torch.argmax(outputs, dim = 1).unsqueeze(1).data
         elif args.method == 'max_entropy':
-            anomaly_results = torch.argmax(F.softmax(outputs, dim = 1), dim = 1).unsqueeze(1).data
+            anomaly_result = torch.argmax(F.softmax(outputs, dim = 1), dim = 1).unsqueeze(1).data
 
-        iouEvalVal.addBatch(anomaly_results, labels)
+        iouEvalVal.addBatch(anomaly_result, labels)
 
         # ________________________ msp, max_logit, max_entropy _______________________ ends
 

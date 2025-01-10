@@ -9,10 +9,33 @@ import numpy as np
 from erfnet import ERFNet
 import os.path as osp
 from argparse import ArgumentParser
+
+#metrics are being imported here **************
+
 from ood_metrics import fpr_at_95_tpr, calc_metrics, plot_roc, plot_pr,plot_barcode
 from sklearn.metrics import roc_auc_score, roc_curve, auc, precision_recall_curve, average_precision_score
 
 seed = 42
+
+# # ______________________
+
+# input_transform = Compose(
+#     [
+#         Resize((512, 1024), Image.BILINEAR),
+#         ToTensor(),
+#         # Normalize([.485, .456, .406], [.229, .224, .225]),
+#     ]
+# )
+
+# target_transform = Compose(
+#     [
+#         Resize((512, 1024), Image.NEAREST),
+#     ]
+# )
+
+
+# # ______________________
+
 
 # general reproducibility
 random.seed(seed)
@@ -21,6 +44,7 @@ torch.manual_seed(seed)
 
 NUM_CHANNELS = 3
 NUM_CLASSES = 20
+
 # gpu training specific
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = True
@@ -56,11 +80,9 @@ def main():
     print ("Loading model: " + modelpath)
     print ("Loading weights: " + weightspath)
 
-    model = ERFNet(NUM_CLASSES)
+    
 
-    if (not args.cpu):
-        model = torch.nn.DataParallel(model).cuda()
-
+    # OKKK
     def load_my_state_dict(model, state_dict):  #custom function to load model when not all dict elements
         own_state = model.state_dict()
         for name, param in state_dict.items():
@@ -73,6 +95,16 @@ def main():
             else:
                 own_state[name].copy_(param)
         return model
+    
+
+    # TO ADDDD _________________ MORE
+
+    model = ERFNet(NUM_CLASSES)
+
+    if (not args.cpu):
+        model = torch.nn.DataParallel(model).cuda()
+        
+    # TO ADDDD ________________ Finish
 
     model = load_my_state_dict(model, torch.load(weightspath, map_location=lambda storage, loc: storage))
     print ("Model and weights LOADED successfully")
@@ -80,11 +112,40 @@ def main():
     
     for path in glob.glob(os.path.expanduser(str(args.input[0]))):
         print(path)
-        images = torch.from_numpy(np.array(Image.open(path).convert('RGB'))).unsqueeze(0).float()
-        images = images.permute(0,3,1,2)
+
+
+        # images = torch.from_numpy(np.array(Image.open(path).convert('RGB'))).unsqueeze(0).float()
+        # images = images.permute(0,3,1,2) 
+        # it manually changes to pytorch format, but we can use instead inout_transform
+
+        images = input_transform((Image.open(path).convert('RGB'))).unsqueeze(0).float()
+
+
+
+
         with torch.no_grad():
             result = model(images)
-        anomaly_result = 1.0 - np.max(result.squeeze(0).data.cpu().numpy(), axis=0)            
+
+        # ________________________ msp, max_logit, max_entropy _______________________ starts
+
+
+        result = result[:-1]
+        if args.method == 'msp':
+            temperature = float(args.temperature)
+            softmax_probability = torch.nn.functional.softmax(result.squeeze(0)/temperature, dim = 0)
+            anomaly_result = 1.0 - np.max(softmax_probability.data.cpu().numpy(), axis = 0)
+        elif args.method == 'max_logit':
+            anomaly_result = -torch.max(result, dim=0)[0]
+            anomaly_result = anomaly_result.data.cpu().numpy()
+        elif args.method == 'max_entropy':
+            softmax_probability = torch.nn.functional.softmax(result.squeeze(0), dim = 0)
+            log_softmax_probs = torch.nn.functional.log_softmax(result.squeeze(0), dim = 0)
+            anomaly_result = torch.div( -torch.sum(softmax_probability * log_softmax_probs, dim = 0),
+                                        torch.log(torch.tensor(result.shape[1]))).data.cpu().cumpy()
+
+
+        # ________________________ msp, max_logit, max_entropy _______________________ ends
+                    
         pathGT = path.replace("images", "labels_masks")                
         if "RoadObsticle21" in pathGT:
            pathGT = pathGT.replace("webp", "png")
@@ -114,7 +175,10 @@ def main():
              ood_gts_list.append(ood_gts)
              anomaly_score_list.append(anomaly_result)
         del result, anomaly_result, ood_gts, mask
-        torch.cuda.empty_cache()
+        torch.cuda.empty_cache()    
+
+
+    # File
 
     file.write( "\n")
 
@@ -132,6 +196,8 @@ def main():
     
     val_out = np.concatenate((ind_out, ood_out))
     val_label = np.concatenate((ind_label, ood_label))
+
+    # Calculation
 
     prc_auc = average_precision_score(val_label, val_out)
     fpr = fpr_at_95_tpr(val_out, val_label)
