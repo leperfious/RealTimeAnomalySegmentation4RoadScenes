@@ -39,7 +39,10 @@ NUM_CLASSES = 20 #pascal=22, cityscapes=20
 color_transform = Colorize(NUM_CLASSES)
 image_transform = ToPILImage()
 
+
+
 #Augmentations - different function implemented to perform random augments on both image and target
+#  okkk
 class MyCoTransform(object):
     def __init__(self, enc, augment=True, height=512):
         self.enc=enc
@@ -76,6 +79,7 @@ class MyCoTransform(object):
         return input, target
 
 
+#  TO ADD ZIP model
 class CrossEntropyLoss2d(torch.nn.Module):
 
     def __init__(self, weight=None):
@@ -87,6 +91,11 @@ class CrossEntropyLoss2d(torch.nn.Module):
         return self.loss(torch.nn.functional.log_softmax(outputs, dim=1), targets)
 
 
+# if we will freeze, load, unfreeze, last layer
+# TO DO
+
+
+# OKKKK -- added something, if needed, change here for Bisenet and ENet, now works only for ERFNet
 def train(args, model, enc=False):
     best_acc = 0
 
@@ -181,7 +190,8 @@ def train(args, model, enc=False):
             filenameCheckpoint = savedir + '/checkpoint_enc.pth.tar'
         else:
             filenameCheckpoint = savedir + '/checkpoint.pth.tar'
-
+        
+        # --
         assert os.path.exists(filenameCheckpoint), "Error: resume option was used but checkpoint was not found in folder"
         checkpoint = torch.load(filenameCheckpoint)
         start_epoch = checkpoint['epoch']
@@ -199,6 +209,9 @@ def train(args, model, enc=False):
 
     for epoch in range(start_epoch, args.num_epochs+1):
         print("----- TRAINING - EPOCH", epoch, "-----")
+
+        #
+        begin_epoch = time.time()
 
         scheduler.step(epoch)    ## scheduler 2
 
@@ -230,6 +243,9 @@ def train(args, model, enc=False):
 
             inputs = Variable(images)
             targets = Variable(labels)
+
+            # **********************************************************
+            # here output works only for Erfnet, change it for bisenet and enet
             outputs = model(inputs, only_encode=enc)
 
             #print("targets", np.unique(targets[:, 0].cpu().data.numpy()))
@@ -296,6 +312,10 @@ def train(args, model, enc=False):
 
             inputs = Variable(images, volatile=True)    #volatile flag makes it free backward or outputs for eval
             targets = Variable(labels, volatile=True)
+
+            # *************************************
+            # again it works for erfnet
+
             outputs = model(inputs, only_encode=enc) 
 
             loss = criterion(outputs, targets[:, 0])
@@ -383,16 +403,20 @@ def train(args, model, enc=False):
         #Epoch		Train-loss		Test-loss	Train-IoU	Test-IoU		learningRate
         with open(automated_log_path, "a") as myfile:
             myfile.write("\n%d\t\t%.4f\t\t%.4f\t\t%.4f\t\t%.4f\t\t%.8f" % (epoch, average_epoch_loss_train, average_epoch_loss_val, iouTrain, iouVal, usedLr ))
+        # ______________
+
+        print(f"Time spent for epoch: {time.time() - begin_epoch}")
     
     return(model)   #return model (convenience for encoder-decoder training)
 
+# OKKKKKK
 def save_checkpoint(state, is_best, filenameCheckpoint, filenameBest):
     torch.save(state, filenameCheckpoint)
     if is_best:
         print ("Saving model as best")
         torch.save(state, filenameBest)
 
-
+# TO DOOOO, TO ADDDD
 def main(args):
     savedir = f'../save/{args.savedir}'
 
@@ -405,6 +429,9 @@ def main(args):
     #Load Model
     assert os.path.exists(args.model + ".py"), "Error: model definition not found"
     model_file = importlib.import_module(args.model)
+
+    # TO DOOOOOOOO
+
     model = model_file.Net(NUM_CLASSES)
     copyfile(args.model + ".py", savedir + '/' + args.model + ".py")
     
