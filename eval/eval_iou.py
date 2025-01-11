@@ -20,6 +20,7 @@ from torchvision.transforms import ToTensor, ToPILImage
 
 from dataset import cityscapes
 from erfnet import ERFNet
+from erfnet_isomax_plus import ERFNetIsomaxPlus
 from transform import Relabel, ToLabel, Colorize
 from iouEval import iouEval, getColorEntry
 
@@ -93,19 +94,29 @@ def main(args):
 
         # ________________________ msp, max_logit, max_entropy _______________________ starts
 
-        with torch.no_grad():
-            outputs = model(inputs)
-        if args.method == 'msp':
-            softmax_probability = F.softmax(outputs, dim = 1)
-            anomaly_result = torch.argmax(softmax_probability, dim = 1).unsqueeze(1).data
-        elif args.method == 'max_logit':
-            anomaly_result = torch.argmax(outputs, dim = 1).unsqueeze(1).data
-        elif args.method == 'max_entropy':
-            anomaly_result = torch.argmax(F.softmax(outputs, dim = 1), dim = 1).unsqueeze(1).data
+        # with torch.no_grad():
+        #     outputs = model(inputs)
+        # if args.method == 'msp':
+        #     softmax_probability = F.softmax(outputs, dim = 1)
+        #     anomaly_result = torch.argmax(softmax_probability, dim = 1).unsqueeze(1).data
+        # elif args.method == 'max_logit':
+        #     anomaly_result = torch.argmax(outputs, dim = 1).unsqueeze(1).data
+        # elif args.method == 'max_entropy':
+        #     anomaly_result = torch.argmax(F.softmax(outputs, dim = 1), dim = 1).unsqueeze(1).data
 
-        iouEvalVal.addBatch(anomaly_result, labels)
+        # iouEvalVal.addBatch(anomaly_result, labels)
 
         # ________________________ msp, max_logit, max_entropy _______________________ ends
+
+        with torch.no_grad():
+            outputs = model(inputs)
+         
+        
+        iouEvalVal.addBatch(outputs.max(1)[1].unsqueeze(1).data, labels)
+
+        # __________
+
+       
 
         filenameSave = filename[0].split("leftImg8bit/")[1] 
 
