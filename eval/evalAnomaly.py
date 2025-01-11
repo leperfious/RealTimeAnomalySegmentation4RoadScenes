@@ -101,8 +101,8 @@ def main():
     print ("Loading weights: " + weightspath)
 
 
-    # it writes to results.txt  ************************
-    results_file = "results.txt"
+    # it writes to results1_ValDat.txt  ************************
+    results_file = "results1_ValDat.txt"
     if not os.path.exists(results_file):
         open(results_file, 'w').close()
 
