@@ -134,9 +134,11 @@ def main(args):
         iou_classes_str.append(iouStr)
 
     print("---------------------------------------")
+    print("Method used:", args.method)
     print("Took", time.time() - start, "seconds")
     print("======================================")
     print("Per-Class IoU:")
+    results_file.write(f"Method used: {args.method}\n")
     results_file.write("Per-Class IoU:\n")
     for i, label in enumerate(["Road", 
                                "Sidewalk", 
