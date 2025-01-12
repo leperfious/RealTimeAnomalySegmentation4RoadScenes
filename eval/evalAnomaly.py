@@ -96,8 +96,7 @@ def main():
 
     # it writes to results1_ValDat.txt  ************************
     results_file = "results1_ValDat.txt"
-    if not os.path.exists(results_file):
-        open(results_file, 'w').close()
+    file = open(results_file, 'w')
 
 
 
@@ -217,10 +216,10 @@ def main():
 
 
 
-        # Check if any data was processed
-        if len(ood_gts_list) == 0 or len(anomaly_score_list) == 0:
-            print("No valid data processed. Ensure dataset is correct.")
-            return
+        # # Check if any data was processed
+        # if len(ood_gts_list) == 0 or len(anomaly_score_list) == 0:
+        #     print("No valid data processed. Ensure dataset is correct.")
+        #     return
 
 
         ood_gts = np.array(ood_gts_list)
