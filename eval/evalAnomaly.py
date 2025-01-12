@@ -217,6 +217,12 @@ def main():
 
 
 
+        # Check if any data was processed
+        if len(ood_gts_list) == 0 or len(anomaly_score_list) == 0:
+            print("No valid data processed. Ensure dataset is correct.")
+            return
+
+
         ood_gts = np.array(ood_gts_list)
         anomaly_scores = np.array(anomaly_score_list)
 
