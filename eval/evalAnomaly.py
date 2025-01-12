@@ -87,7 +87,9 @@ def main():
     parser.add_argument('--loadModel', default="erfnet.py")
     parser.add_argument('--method', default='msp', choices=['msp','max_logit', 'max_entropy'], help='Method for anomaly detection') #  check this one **
     parser.add_argument('--subset', default="val")  #can be val or train (must have labels)
-    parser.add_argument('--datadir', default="/content/datasets/cityscapes")  # check this one **
+    # we use datadir for training the model, but we use testdir on pre-trained models
+    # parser.add_argument('--datadir', default="/content/datasets/cityscapes")  # ***
+    parser.add_argument('--testdirdir', default="/content/datasets/validation_dataset")
     parser.add_argument('--num-workers', type=int, default=4)
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--cpu', action='store_true')
@@ -205,8 +207,8 @@ def main():
                 anomaly_score_list.append(anomaly_score)  
 
 
-        val_out = np.array(anomaly_score_list).flatten()
-        val_label = np.array([1 if ood == 1 else 0  for ood in np.array(ood_gts_list).flatten()])
+        val_out = np.array([score.cpu().numpy() for score in anomaly_score_list]).flatten()
+        val_label = np.array([1 if ood == 1 else 0 for ood in np.array(ood_gts_list).flatten()])
 
         au_prc = average_precision_score(val_label, val_out)
         fpr = fpr_at_95_tpr(val_out, val_label)
