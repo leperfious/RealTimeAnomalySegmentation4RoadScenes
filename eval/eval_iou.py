@@ -53,7 +53,7 @@ def load_my_state_dict(model, state_dict):  #custom function to load model when 
 def main(args):
 
     modelpath = os.path.join(args.loadDir, args.loadModel)
-    weightspath = os.args.join(args.loadDir, args.loadWeights)
+    weightspath = os.path.join(args.loadDir, args.loadWeights)
 
     print ("Loading model: " + modelpath)
     print ("Loading weights: " + weightspath)
