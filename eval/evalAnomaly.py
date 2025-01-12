@@ -46,6 +46,8 @@ def fpr_at_95_tpr(y_scores, y_true):
 def main():
     parser = ArgumentParser()
     parser.add_argument('--loadDir', default="../trained_models/")
+    parser.add_argument('--loadModel', default='erfnet.py', help='Model file to load')
+    parser.add_argument('--subset', default='val', help='Subset for evaluation (val or train)')
     parser.add_argument('--loadWeights', default="erfnet_pretrained.pth")
     parser.add_argument('--method', default='msp', choices=['msp', 'max_logit', 'max_entropy'], help='Anomaly detection method')
     parser.add_argument('--testdir', default="/content/datasets/validation_dataset", help='Directory containing test datasets')
