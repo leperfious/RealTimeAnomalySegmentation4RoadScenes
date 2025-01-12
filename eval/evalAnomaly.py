@@ -217,7 +217,8 @@ def main():
                 anomaly_score_list.append(anomaly_score)  
 
 
-        val_out = np.array([t.cpu().numpy() for t in anomaly_score_list]).flatten() 
+        # Convert anomaly_score_list elements to numpy arrays if they are tensors
+        val_out = np.array([t.cpu().numpy() if hasattr(t, 'cpu') else t for t in anomaly_score_list]).flatten() 
         val_label = np.array([1 if ood == 1 else 0 for ood in np.array(ood_gts_list).flatten()])
 
         au_prc = average_precision_score(val_label, val_out)
