@@ -73,7 +73,7 @@ def load_my_state_dict(model, state_dict):  #custom function to load model when 
 def main():
     parser = ArgumentParser()
 
-    parser.add_argument('--input', type=str, default='/content/validation_dataset/Validation_Dataset', help='Root directory of the datasets')
+    parser.add_argument('--input', type=str, default='/content/datasets/validation_dataset', help='Root directory of the datasets')
     parser.add_argument('--loadDir',default="../trained_models/")
     parser.add_argument('--loadWeights', default="erfnet_pretrained.pth")
     parser.add_argument('--loadModel', default="erfnet.py")
