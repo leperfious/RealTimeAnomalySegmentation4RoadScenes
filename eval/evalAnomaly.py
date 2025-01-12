@@ -185,22 +185,33 @@ def main():
             ood_gts = np.array(mask)
 
             
-            # Dataset adjustments, added here all datasets from validation
-            if "RoadAnomaly" in pathGT or "RoadAnomaly21" in pathGT:
-                ood_gts = np.where((ood_gts==2), 1, ood_gts)
+            # # Dataset adjustments, added here all datasets from validation
+            # if "RoadAnomaly" in pathGT or "RoadAnomaly21" in pathGT:
+            #     ood_gts = np.where((ood_gts==2), 1, ood_gts)
 
-            # I added manually, it was different
-            if "FS_LostFound_full" in pathGT:
-                ood_gts = np.where((ood_gts==0), 0, ood_gts)
+            # # I added manually, it was different
+            # if "FS_LostFound_full" in pathGT:
+            #     ood_gts = np.where((ood_gts==0), 0, ood_gts)
+            #     ood_gts = np.where((ood_gts==1), 0, ood_gts)
+            #     ood_gts = np.where((ood_gts>1)&(ood_gts<201), 1, ood_gts)
+            #     ood_gts = np.where((ood_gts == 255), 0, ood_gts)
+
+            # # I added manually, it was not here
+            # if "fs_static" in pathGT or "RoadObsticle21" in pathGT:
+            #     ood_gts = np.where((ood_gts==14), 1, ood_gts)
+            #     ood_gts = np.where((ood_gts<20), 0, ood_gts)
+            #     ood_gts = np.where((ood_gts==255), 0, ood_gts)
+            if "RoadAnomaly" in pathGT:
+                ood_gts = np.where((ood_gts==2), 1, ood_gts)
+            if "LostAndFound" in pathGT:
+                ood_gts = np.where((ood_gts==0), 255, ood_gts)
                 ood_gts = np.where((ood_gts==1), 0, ood_gts)
                 ood_gts = np.where((ood_gts>1)&(ood_gts<201), 1, ood_gts)
-                ood_gts = np.where((ood_gts == 255), 0, ood_gts)
 
-            # I added manually, it was not here
-            if "fs_static" in pathGT or "RoadObsticle21" in pathGT:
-                ood_gts = np.where((ood_gts==14), 1, ood_gts)
+            if "Streethazard" in pathGT:
+                ood_gts = np.where((ood_gts==14), 255, ood_gts)
                 ood_gts = np.where((ood_gts<20), 0, ood_gts)
-                ood_gts = np.where((ood_gts==255), 0, ood_gts)
+                ood_gts = np.where((ood_gts==255), 1, ood_gts)
 
             if 1 in np.unique(ood_gts):
                 ood_gts_flat = ood_gts.flatten()
