@@ -209,7 +209,7 @@ def main():
 
             if 1 in np.unique(ood_gts):
                 ood_gts_list.append(ood_gts.flatten())
-                anomaly_score_list.appen(anomaly_score.flatten())
+                anomaly_score_list.append(anomaly_score.flatten())
             
             del outputs, anomaly_score, image
             torch.cuda.empty_cache()
