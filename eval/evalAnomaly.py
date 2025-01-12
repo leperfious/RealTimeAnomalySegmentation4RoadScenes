@@ -114,11 +114,18 @@ def main():
 
     model = ERFNet(NUM_CLASSES)
 
+
+    # Update torch.load to handle warning
+    try:
+        model = load_my_state_dict(model, torch.load(weightspath, map_location=lambda storage, loc: storage, weights_only=True))
+    except TypeError:  # For older PyTorch versions
+        model = load_my_state_dict(model, torch.load(weightspath, map_location=lambda storage, loc: storage))
+
+
     if not args.cpu:
         model = torch.nn.DataParallel(model).cuda()
 
-    model = load_my_state_dict(model, torch.load(weightspath, map_location=lambda storage, loc: storage))
-    print ("Model and weights LOADED successfully")
+
         
     # TO ADD MORE MODEL - Finish ***
 
@@ -166,7 +173,7 @@ def main():
                 entropy = -torch.sum(softmax_probability * log_softmax_probs, dim = 1)
                 anomaly_score = entropy.cpu().numpy()
 
-            anomaly_score_list.append(anomaly_score)
+            anomaly_score_list.append(anomaly_score.cpu().numpy())
 
             # ________________________ msp, max_logit, max_entropy _______________________ ends
 
@@ -207,7 +214,7 @@ def main():
                 anomaly_score_list.append(anomaly_score)  
 
 
-        val_out = np.array([score.cpu().numpy() for score in anomaly_score_list]).flatten()
+        val_out = np.array(anomaly_score_list).flatten()
         val_label = np.array([1 if ood == 1 else 0 for ood in np.array(ood_gts_list).flatten()])
 
         au_prc = average_precision_score(val_label, val_out)
