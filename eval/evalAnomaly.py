@@ -216,6 +216,8 @@ def main():
         print(f"Anomaly score list length: {len(anomaly_score_list)}")
         print(f"OOD ground truth list length: {len(ood_gts_list)}")
 
+        batch_size = 10000
+
         val_label = np.concatenate([mask.flatten() for mask in ood_gts_list])
         val_out = np.concatenate([out.flatten() for out in anomaly_score_list])
 
