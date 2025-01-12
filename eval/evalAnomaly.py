@@ -87,7 +87,7 @@ def main():
     parser.add_argument('--loadModel', default="erfnet.py")
     parser.add_argument('--method', default='msp', choices=['msp','max_logit', 'max_entropy'], help='Method for anomaly detection') #  check this one **
     parser.add_argument('--subset', default="val")  #can be val or train (must have labels)
-    parser.add_argument('--datadir', default="/content/cityscapes")  # check this one **
+    parser.add_argument('--datadir', default="/content/datasets/cityscapes")  # check this one **
     parser.add_argument('--num-workers', type=int, default=4)
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--cpu', action='store_true')
@@ -123,11 +123,11 @@ def main():
     model.eval() #  starts evaluation **
 
     datasets = [
-        "/content/validation_dataset/FS_LostFound_full/images/*.png",
-        "/content/validation_dataset/fs_static/images/*.jpg",
-        "/content/validation_dataset/RoadAnomaly/images/*.jpg",
-        "/content/validation_dataset/RoadAnomaly21/images/*.png",
-        "/content/validation_dataset/RoadObsticle21/images/*.webp"
+        "/content/datasets/validation_dataset/FS_LostFound_full/images/*.png",
+        "/content/datasets/validation_dataset/fs_static/images/*.jpg",
+        "/content/datasets/validation_dataset/RoadAnomaly/images/*.jpg",
+        "/content/datasets/validation_dataset/RoadAnomaly21/images/*.png",
+        "/content/datasets/validation_dataset/RoadObsticle21/images/*.webp"
     ]
 
     for dataset_path in datasets:
