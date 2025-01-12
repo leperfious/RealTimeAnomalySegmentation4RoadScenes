@@ -164,7 +164,7 @@ def main():
             if args.method == 'msp':
                 #  temperature = float(args.temperature) # when we use temperatue, we need to also divide ouputs to it
                 softmax_probability = torch.nn.functional.softmax(outputs, dim = 1) # dim 0 operates across the batch dimension, dim 1 applies softmax operation across num_classes dimentions for each pixel
-                anomaly_score = 1.0 - torch.max(softmax_probability, dim=1)[0].cpu().numpy()
+                anomaly_score = 1.0 - torch.max(softmax_probability, dim=1)[0]
             elif args.method == 'max_logit':
                 anomaly_score = -torch.max(outputs, dim=1)[0].cpu().numpy()
             elif args.method == 'max_entropy':
@@ -172,6 +172,9 @@ def main():
                 log_softmax_probs = torch.nn.functional.log_softmax(outputs, dim = 1)
                 entropy = -torch.sum(softmax_probability * log_softmax_probs, dim = 1)
                 anomaly_score = entropy.cpu().numpy()
+
+            if isinstance(anomaly_score, torch.Tensor):
+                anomaly_score = anomaly_score.cpu().numpy()
 
             anomaly_score_list.append(anomaly_score.cpu().numpy())
 
