@@ -216,8 +216,8 @@ def main():
         print(f"Anomaly score list length: {len(anomaly_score_list)}")
         print(f"OOD ground truth list length: {len(ood_gts_list)}")
 
-        val_out = np.concatenate(anomaly_score_list).flatten()
-        val_label = np.concatenate([np.where(mask.flatten() == 1, 1, 0) for mask in ood_gts_list])
+        val_label = np.concatenate([mask.flatten() for mask in ood_gts_list])
+        val_out = np.concatenate([out.flatten() for out in outputs])
 
         au_prc = average_precision_score(val_label, val_out)
         fpr = fpr_at_95_tpr(val_out, val_label)
