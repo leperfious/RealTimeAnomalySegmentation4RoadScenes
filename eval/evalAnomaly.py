@@ -166,14 +166,14 @@ def main():
             if args.method == 'msp':
                 #  temperature = float(args.temperature) # when we use temperatue, we need to also divide ouputs to it
                 softmax_probability = torch.nn.functional.softmax(outputs, dim = 1) # dim 0 operates across the batch dimension, dim 1 applies softmax operation across num_classes dimentions for each pixel
-                anomaly_score = 1.0 - torch.max(softmax_probability, dim=1)[0].cpu().numpy()
+                anomaly_score = 1.0 - torch.max(softmax_probability, dim=1)[0]
             elif args.method == 'max_logit':
-                anomaly_score = -torch.max(outputs, dim=1)[0].cpu().numpy()
+                anomaly_score = -torch.max(outputs, dim=1)[0]
             elif args.method == 'max_entropy':
                 softmax_probability = torch.nn.functional.softmax(outputs, dim = 1)
                 log_softmax_probs = torch.nn.functional.log_softmax(outputs, dim = 1)
                 entropy = -torch.sum(softmax_probability * log_softmax_probs, dim = 1)
-                anomaly_score = entropy.cpu().numpy()
+                anomaly_score = entropy
 
             # ________________________ msp, max_logit, max_entropy _______________________ ends
 
@@ -208,8 +208,16 @@ def main():
                 ood_gts = np.where((ood_gts==255), 1, ood_gts)
 
             if 1 in np.unique(ood_gts):
-                ood_gts_list.append(ood_gts.flatten())
-                anomaly_score_list.append(anomaly_score.flatten())
+                ood_gts_flat = ood_gts.flatten()
+                anomaly_score_flat = anomaly_score.detach().cpu().numpy().flatten()
+
+                # Ensure consistent shapes
+                if len(ood_gts_flat) == len(anomaly_score_flat):
+                    ood_gts_list.append(ood_gts_flat)
+                    anomaly_score_list.append(anomaly_score_flat)
+                else:
+                    print(f"Inconsistent shapes: ood_gts_flat={len(ood_gts_flat)}, anomaly_score_flat={len(anomaly_score_flat)}")
+
             
             del outputs, anomaly_score, image
             torch.cuda.empty_cache()
@@ -219,22 +227,25 @@ def main():
         print(f"Anomaly score list length: {len(anomaly_score_list)}")
         print(f"OOD ground truth list length: {len(ood_gts_list)}")
 
-        batch_size = 10000
+        if anomaly_score_list and ood_gts_list:
+            val_out = np.concatenate(anomaly_score_list)
+            val_label = np.concatenate(ood_gts_list)
 
-        val_label = np.concatenate(ood_gts_list)
-        val_out = np.concatenate(anomaly_score_list)
+            print(f"val_out length: {len(val_out)}")
+            print(f"val_label length: {len(val_label)}")
 
-        print(f"val_out length: {len(val_out)}")
-        print(f"val_label length: {len(val_label)}")
+         # Final consistency check
+            if len(val_out) == len(val_label):
+                au_prc = average_precision_score(val_label, val_out)
+                fpr = fpr_at_95_tpr(val_out, val_label)
 
-        au_prc = average_precision_score(val_label, val_out)
-        fpr = fpr_at_95_tpr(val_out, val_label)
+                print(f"AuPRC for {dataset_path}: {au_prc * 100.0}%")
+                print(f"FPR95 for {dataset_path}: {fpr * 100.0}%")
 
-        print(f"AuPRC for {dataset_path}: {au_prc * 100.0}%")
-        print(f"FPR95 for {dataset_path}: {fpr * 100.0}%")
-
-        with open(results_file, 'a') as file:
-            file.write(f"{dataset_path} - AuPRC: {au_prc * 100.0:.2f}%, FPR@95: {fpr * 100.0:.2f}%\n")
+                with open(results_file, 'a') as file:
+                    file.write(f"{dataset_path} - AuPRC: {au_prc * 100.0:.2f}%, FPR@95: {fpr * 100.0:.2f}%\n")
+            else:
+                print(f"Skipped dataset due to mismatched lengths: val_out={len(val_out)}, val_label={len(val_label)}")
 
 
 if __name__ == '__main__':
