@@ -96,7 +96,7 @@ def main():
 
     # it writes to results1_ValDat.txt  ************************
     results_file = "results1_ValDat.txt"
-    file = open(results_file, 'w')
+    file = open(results_file, 'a')
 
 
 
