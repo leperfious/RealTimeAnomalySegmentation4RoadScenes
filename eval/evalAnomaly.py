@@ -166,21 +166,16 @@ def main():
                 softmax_probability = torch.nn.functional.softmax(outputs, dim = 1) # dim 0 operates across the batch dimension, dim 1 applies softmax operation across num_classes dimentions for each pixel
                 anomaly_score = 1.0 - torch.max(softmax_probability, dim=1)[0]
             elif args.method == 'max_logit':
-                anomaly_score = -torch.max(outputs, dim=1)[0].cpu().numpy()
+                anomaly_score = -torch.max(outputs, dim=1)[0]
             elif args.method == 'max_entropy':
                 softmax_probability = torch.nn.functional.softmax(outputs, dim = 1)
                 log_softmax_probs = torch.nn.functional.log_softmax(outputs, dim = 1)
                 entropy = -torch.sum(softmax_probability * log_softmax_probs, dim = 1)
-                anomaly_score = entropy.cpu().numpy()
-
-            if isinstance(anomaly_score, torch.Tensor):
-                anomaly_score = anomaly_score.cpu().numpy()
-
-            anomaly_score_list.append(anomaly_score)
+                anomaly_score = entropy
 
             # ________________________ msp, max_logit, max_entropy _______________________ ends
 
-            # Validation datasets are different from each other, we need to fix it.
+            # Testing datasets are different from each other, we need to fix it.
 
             pathGT = path.replace("images", "labels_masks") #  instead of changing them by ourselves, we change it to labels_masks format. We can make it easier
             for ext in ["png", "jpg", "webp"]:
@@ -218,10 +213,11 @@ def main():
 
 
 
-        # Convert anomaly_score_list elements to numpy arrays if they are tensors
-        val_out = np.array([t.cpu().numpy() for t in anomaly_score_list]).flatten() 
-        val_label = np.array([1 if ood == 1 else 0 for ood in np.array(ood_gts_list).flatten()])
+        print(f"Anomaly score list length: {len(anomaly_score_list)}")
+        print(f"OOD ground truth list length: {len(ood_gts_list)}")
 
+        val_out = np.concatenate(anomaly_score_list).flatten()
+        val_label = np.concatenate([np.where(mask.flatten() == 1, 1, 0) for mask in ood_gts_list])
 
         au_prc = average_precision_score(val_label, val_out)
         fpr = fpr_at_95_tpr(val_out, val_label)
