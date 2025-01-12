@@ -210,16 +210,18 @@ def main():
                 ood_gts = np.where((ood_gts<20), 0, ood_gts)
                 ood_gts = np.where((ood_gts==255), 1, ood_gts)
 
-            if 1 not in np.unique(ood_gts):
-                continue              
-            else:
+            if 1 in np.unique(ood_gts):
                 ood_gts_list.append(ood_gts)
-                anomaly_score_list.append(anomaly_score)  
+                if isinstance(anomaly_score, torch.Tensor):
+                    anomaly_score = anomaly_score.cpu().numpy()
+                anomaly_score_list.append(anomaly_score)
+
 
 
         # Convert anomaly_score_list elements to numpy arrays if they are tensors
-        val_out = np.array([t.cpu().numpy() if hasattr(t, 'cpu') else t for t in anomaly_score_list]).flatten() 
+        val_out = np.array([t.cpu().numpy() for t in anomaly_score_list]).flatten() 
         val_label = np.array([1 if ood == 1 else 0 for ood in np.array(ood_gts_list).flatten()])
+
 
         au_prc = average_precision_score(val_label, val_out)
         fpr = fpr_at_95_tpr(val_out, val_label)
