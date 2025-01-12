@@ -176,7 +176,7 @@ def main():
             if isinstance(anomaly_score, torch.Tensor):
                 anomaly_score = anomaly_score.cpu().numpy()
 
-            anomaly_score_list.append(anomaly_score.cpu().numpy())
+            anomaly_score_list.append(anomaly_score)
 
             # ________________________ msp, max_logit, max_entropy _______________________ ends
 
