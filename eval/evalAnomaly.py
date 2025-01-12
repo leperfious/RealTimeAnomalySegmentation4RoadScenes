@@ -3,6 +3,7 @@ import cv2
 import glob
 import torch
 import random
+
 from PIL import Image
 import numpy as np
 from erfnet import ERFNet
@@ -13,8 +14,8 @@ from argparse import ArgumentParser
 
 
 # importing metrics that we need: AuPRC and FPR95
-from ood_metrics import fpr_at_95_tpr, calc_metrics, plot_roc, plot_pr, plot_barcode
-from sklearn.metrics import roc_auc_score, roc_curve, auc, precision_recall_curve, average_precision_score
+from ood_metrics import fpr_at_95_tpr
+from sklearn.metrics import roc_curve, average_precision_score
 
 # input_transform
 from torchvision.transforms import Resize, Compose, ToTensor
@@ -62,40 +63,30 @@ def load_my_state_dict(model, state_dict):  #custom function to load model when 
                 own_state[name].copy_(param)
         return model
 
-# FPR95 implementation **
-def fpr_at_95_tpr(y_scores, y_true):
-    fpr, tpr, thresholds = roc_curve (y_true, y_scores)
-    close_tpr = np.abs(tpr-0.95).argmin()
-    return fpr[close_tpr]
+# # FPR95 implementation **
+# def fpr_at_95_tpr(y_scores, y_true):
+#     fpr, tpr, thresholds = roc_curve (y_true, y_scores)
+#     close_tpr = np.abs(tpr-0.95).argmin()
+#     return fpr[close_tpr]
 
 
 def main():
     parser = ArgumentParser()
 
-    """""
-    parser.add_argument(
-        "--input",
-        default="/content/validation_dataset/RoadObsticle21/images/*.webp", #  check this one ** 
-        nargs="+",
-        help="A list of space separated input images; "
-        "or a single glob pattern such as 'directory/*.jpg'",
-    )
-    """
-
+    parser.add_argument('--input', type=str, default='/content/validation_dataset/', help='Root directory of the datasets')
     parser.add_argument('--loadDir',default="../trained_models/")
     parser.add_argument('--loadWeights', default="erfnet_pretrained.pth")
     parser.add_argument('--loadModel', default="erfnet.py")
-    parser.add_argument('--method', default='msp', choices=['msp','max_logit', 'max_entropy'], help='Method for anomaly detection') #  check this one **
+    parser.add_argument('--method', type = str, default='msp', choices=['msp','max_logit', 'max_entropy'], help='Method for anomaly detection') #  check this one **
     parser.add_argument('--subset', default="val")  #can be val or train (must have labels)
-    # we use datadir for training the model, but we use testdir on pre-trained models
-    # parser.add_argument('--datadir', default="/content/datasets/cityscapes")  # ***
-    parser.add_argument('--testdir', default="/content/datasets/validation_dataset")
+    parser.add_argument('--datadir', default="/content/datasets/cityscapes")  # ***
     parser.add_argument('--num-workers', type=int, default=4)
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--cpu', action='store_true')
+
     args = parser.parse_args()
     
-    
+    # model name, later
     modelpath = os.path.join(args.loadDir, args.loadModel)
     weightspath = os.path.join(args.loadDir, args.loadWeights)
 
@@ -112,23 +103,22 @@ def main():
 
     # TO ADD MORE MODEL - Start ***
 
-    model = ERFNet(NUM_CLASSES)
+    net = ERFNet(NUM_CLASSES)
 
     if not args.cpu:
-        model = torch.nn.DataParallel(model).cuda()
+        model = torch.nn.DataParallel(net).cuda()
+    else:
+        model = net
 
 
     # Update torch.load to handle warning
-    try:
-        model = load_my_state_dict(model, torch.load(weightspath, map_location=lambda storage, loc: storage, weights_only=True))
-    except TypeError:  # For older PyTorch versions
-        model = load_my_state_dict(model, torch.load(weightspath, map_location=lambda storage, loc: storage))
-
-
+    if args.loadWeights.endswith('.tar'):
+        model = load_my_state_dict(model, torch.load(weightspath)['state_dict'])
+    else:
+        model = load_my_state_dict(model, torch.load(weightspath))
+    print('Model and weights LOADED successfully')
     
 
-
-        
     # TO ADD MORE MODEL - Finish ***
 
     model.eval() #  starts evaluation **
@@ -159,21 +149,23 @@ def main():
                 image = image.cuda()
 
             with torch.no_grad():
-                outputs = model(image)
+                outputs = model(image).squeeze(0)
 
             # ________________________ msp, max_logit, max_entropy _______________________ starts
 
             if args.method == 'msp':
-                #  temperature = float(args.temperature) # when we use temperatue, we need to also divide ouputs to it
-                softmax_probability = torch.nn.functional.softmax(outputs, dim = 1) # dim 0 operates across the batch dimension, dim 1 applies softmax operation across num_classes dimentions for each pixel
-                anomaly_score = 1.0 - torch.max(softmax_probability, dim=1)[0]
+                softmax_probability = torch.nn.functional.softmax(outputs, dim=0)
+                anomaly_score = 1.0 - torch.max(softmax_probability, dim=0)[0]
             elif args.method == 'max_logit':
-                anomaly_score = -torch.max(outputs, dim=1)[0]
+                anomaly_score = -torch.max(outputs, dim=0)[0]
             elif args.method == 'max_entropy':
-                softmax_probability = torch.nn.functional.softmax(outputs, dim = 1)
-                log_softmax_probs = torch.nn.functional.log_softmax(outputs, dim = 1)
-                entropy = -torch.sum(softmax_probability * log_softmax_probs, dim = 1)
+                softmax_probability = torch.nn.functional.softmax(outputs, dim=0)
+                log_softmax_probs = torch.nn.functional.log_softmax(outputs, dim=0)
+                entropy = -torch.sum(softmax_probability * log_softmax_probs, dim=0)
                 anomaly_score = entropy
+
+            anomaly_score = anomaly_score.data.cpu().numpy()
+
 
             # ________________________ msp, max_logit, max_entropy _______________________ ends
 
@@ -190,6 +182,7 @@ def main():
 
 
             mask = Image.open(pathGT)
+            mask = target_transform(mask)
             ood_gts = np.array(mask)
 
             
@@ -209,7 +202,7 @@ def main():
 
             if 1 in np.unique(ood_gts):
                 ood_gts_flat = ood_gts.flatten()
-                anomaly_score_flat = anomaly_score.detach().cpu().numpy().flatten()
+                anomaly_score_flat = anomaly_score.flatten()
 
                 # Ensure consistent shapes
                 if len(ood_gts_flat) == len(anomaly_score_flat):
@@ -224,29 +217,36 @@ def main():
 
 
 
-        print(f"Anomaly score list length: {len(anomaly_score_list)}")
-        print(f"OOD ground truth list length: {len(ood_gts_list)}")
+        ood_gts = np.array(ood_gts_list)
+        anomaly_scores = np.array(anomaly_score_list)
 
-        if anomaly_score_list and ood_gts_list:
-            val_out = np.concatenate(anomaly_score_list)
-            val_label = np.concatenate(ood_gts_list)
+        ood_mask = ood_gts == 1
+        ind_mask = ood_gts == 0
 
-            print(f"val_out length: {len(val_out)}")
-            print(f"val_label length: {len(val_label)}")
+        ood_out = anomaly_scores[ood_mask]
+        ind_out = anomaly_scores[ind_mask]
 
-         # Final consistency check
-            if len(val_out) == len(val_label):
-                au_prc = average_precision_score(val_label, val_out)
-                fpr = fpr_at_95_tpr(val_out, val_label)
+        ood_label = np.ones(len(ood_out))
+        ind_label = np.zeros(len(ind_out))
 
-                print(f"AuPRC for {dataset_path}: {au_prc * 100.0}%")
-                print(f"FPR95 for {dataset_path}: {fpr * 100.0}%")
+        val_out = np.concatenate((ind_out, ood_out))
+        val_label = np.concatenate((ind_label, ood_label))
 
-                with open(results_file, 'a') as file:
-                    file.write(f"{dataset_path} - AuPRC: {au_prc * 100.0:.2f}%, FPR@95: {fpr * 100.0:.2f}%\n")
-            else:
-                print(f"Skipped dataset due to mismatched lengths: val_out={len(val_out)}, val_label={len(val_label)}")
+        prc_auc = average_precision_score(val_label, val_out)
+        fpr = fpr_at_95_tpr(val_out, val_label)
 
+        dataset_name = dataset_path.split("/")[-3]
+        # print(f'Model: {modelname.upper()}')
+        print(f'Method: {args.method}')
+        print(f'Dataset: {dataset_name}')
+        print(f'AUPRC score: {round(prc_auc*100.0, 3)}')
+        print(f'FPR@TPR95: {round(fpr*100.0, 3)}')
+
+        file.write(
+            f'Method: {args.method}     Dataset: {dataset_name}   AUPRC score: {round(prc_auc * 100.0, 3)}   FPR@TPR95: {round(fpr * 100.0, 3)}\n'
+        )
+
+    file.close()
 
 if __name__ == '__main__':
     main()
