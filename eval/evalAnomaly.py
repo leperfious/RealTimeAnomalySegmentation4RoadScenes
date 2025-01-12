@@ -114,6 +114,9 @@ def main():
 
     model = ERFNet(NUM_CLASSES)
 
+    if not args.cpu:
+        model = torch.nn.DataParallel(model).cuda()
+
 
     # Update torch.load to handle warning
     try:
@@ -122,8 +125,7 @@ def main():
         model = load_my_state_dict(model, torch.load(weightspath, map_location=lambda storage, loc: storage))
 
 
-    if not args.cpu:
-        model = torch.nn.DataParallel(model).cuda()
+    
 
 
         
@@ -164,14 +166,14 @@ def main():
             if args.method == 'msp':
                 #  temperature = float(args.temperature) # when we use temperatue, we need to also divide ouputs to it
                 softmax_probability = torch.nn.functional.softmax(outputs, dim = 1) # dim 0 operates across the batch dimension, dim 1 applies softmax operation across num_classes dimentions for each pixel
-                anomaly_score = 1.0 - torch.max(softmax_probability, dim=1)[0]
+                anomaly_score = 1.0 - torch.max(softmax_probability, dim=1)[0].cpu().numpy()
             elif args.method == 'max_logit':
-                anomaly_score = -torch.max(outputs, dim=1)[0]
+                anomaly_score = -torch.max(outputs, dim=1)[0].cpu().numpy()
             elif args.method == 'max_entropy':
                 softmax_probability = torch.nn.functional.softmax(outputs, dim = 1)
                 log_softmax_probs = torch.nn.functional.log_softmax(outputs, dim = 1)
                 entropy = -torch.sum(softmax_probability * log_softmax_probs, dim = 1)
-                anomaly_score = entropy
+                anomaly_score = entropy.cpu().numpy()
 
             # ________________________ msp, max_logit, max_entropy _______________________ ends
 
@@ -206,10 +208,11 @@ def main():
                 ood_gts = np.where((ood_gts==255), 1, ood_gts)
 
             if 1 in np.unique(ood_gts):
-                ood_gts_list.append(ood_gts)
-                if isinstance(anomaly_score, torch.Tensor):
-                    anomaly_score = anomaly_score.detach().cpu().numpy()
-                anomaly_score_list.append(anomaly_score)
+                ood_gts_list.append(ood_gts.flatten())
+                anomaly_score_list.appen(anomaly_score.flatten())
+            
+            del outputs, anomaly_score, image
+            torch.cuda.empty_cache()
 
 
 
@@ -218,8 +221,8 @@ def main():
 
         batch_size = 10000
 
-        val_label = np.concatenate([mask.flatten() for mask in ood_gts_list])
-        val_out = np.concatenate([out.flatten() for out in anomaly_score_list])
+        val_label = np.concatenate(ood_gts_list)
+        val_out = np.concatenate(anomaly_score_list)
 
         print(f"val_out length: {len(val_out)}")
         print(f"val_label length: {len(val_label)}")
