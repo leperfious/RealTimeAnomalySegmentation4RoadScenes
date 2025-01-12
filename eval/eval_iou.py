@@ -66,25 +66,25 @@ def main(args):
 
     # to add
 
-    # if not os.path.exists(args.datadir):
-    #     raise FileNotFoundError(f"Dataset directory not found: {args.datadir}")
-    # print(f"Using dataset directory: {args.datadir}")
+    if not os.path.exists(args.datadir):
+        raise FileNotFoundError(f"Dataset directory not found: {args.datadir}")
+    print(f"Using dataset directory: {args.datadir}")
 
-    # # Update torch.load to handle warning
-    # try:
-    #     model = load_my_state_dict(model, torch.load(weightspath, map_location=lambda storage, loc: storage, weights_only=True))
-    # except TypeError:  # For older PyTorch versions
-    #     model = load_my_state_dict(model, torch.load(weightspath, map_location=lambda storage, loc: storage))
+    # Update torch.load to handle warning
+    try:
+        model = load_my_state_dict(model, torch.load(weightspath, map_location=lambda storage, loc: storage, weights_only=True))
+    except TypeError:  # For older PyTorch versions
+        model = load_my_state_dict(model, torch.load(weightspath, map_location=lambda storage, loc: storage))
 
 
-    model = load_my_state_dict(model, torch.load(weightspath, map_location=lambda storage, loc: storage))
-    print ("Model and weights LOADED successfully")
+    # model = load_my_state_dict(model, torch.load(weightspath, map_location=lambda storage, loc: storage))
+    # print ("Model and weights LOADED successfully")
 
     model.eval() # evaluation starts
 
-    if(not os.path.exists(args.datadir)):
-        print ("Error: datadir could not be loaded")
-        return
+    # if(not os.path.exists(args.datadir)):
+    #     print ("Error: datadir could not be loaded")
+    #     return
 
 
     loader = DataLoader(cityscapes(args.datadir, input_transform_cityscapes, target_transform_cityscapes, subset=args.subset),
