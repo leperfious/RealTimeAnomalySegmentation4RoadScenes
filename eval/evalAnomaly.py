@@ -89,7 +89,7 @@ def main():
     parser.add_argument('--subset', default="val")  #can be val or train (must have labels)
     # we use datadir for training the model, but we use testdir on pre-trained models
     # parser.add_argument('--datadir', default="/content/datasets/cityscapes")  # ***
-    parser.add_argument('--testdirdir', default="/content/datasets/validation_dataset")
+    parser.add_argument('--testdir', default="/content/datasets/validation_dataset")
     parser.add_argument('--num-workers', type=int, default=4)
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--cpu', action='store_true')
