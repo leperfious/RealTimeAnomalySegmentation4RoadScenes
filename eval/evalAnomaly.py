@@ -208,7 +208,7 @@ def main():
             if 1 in np.unique(ood_gts):
                 ood_gts_list.append(ood_gts)
                 if isinstance(anomaly_score, torch.Tensor):
-                    anomaly_score = anomaly_score.cpu().numpy()
+                    anomaly_score = anomaly_score.detach().cpu().numpy()
                 anomaly_score_list.append(anomaly_score)
 
 
@@ -217,7 +217,10 @@ def main():
         print(f"OOD ground truth list length: {len(ood_gts_list)}")
 
         val_label = np.concatenate([mask.flatten() for mask in ood_gts_list])
-        val_out = np.concatenate([out.flatten() for out in outputs])
+        val_out = np.concatenate([out.flatten() for out in anomaly_score_list])
+
+        print(f"val_out length: {len(val_out)}")
+        print(f"val_label length: {len(val_label)}")
 
         au_prc = average_precision_score(val_label, val_out)
         fpr = fpr_at_95_tpr(val_out, val_label)
