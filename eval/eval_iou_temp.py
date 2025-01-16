@@ -120,7 +120,7 @@ def main(args):
 
         # ________________________ msp, max_logit, max_entropy _______________________ ends
 
-        iouEvalVal.addBatch(outputs.max(1)[1].unsqueeze(1).data, labels)
+        iouEvalVal.addBatch(anomaly_result, labels)
 
         filenameSave = filename[0].split("leftImg8bit/")[1] 
         print(step, filenameSave)
@@ -177,7 +177,7 @@ if __name__ == '__main__':
     parser.add_argument('--subset', default="val")
     parser.add_argument('--temperature', type=float, default=1) #  for the temperature scaling, default is 1
     parser.add_argument('--datadir', default="/content/datasets/cityscapes")  # It needed to be corrected, i bring it from colab acc.
-    parser.add_argument('--testdir', default="/content/datasets/validation_dataset")
+    #  parser.add_argument('--testdir', default="/content/datasets/validation_dataset")
     parser.add_argument('--num-workers', type=int, default=4)
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--cpu', action='store_true')
