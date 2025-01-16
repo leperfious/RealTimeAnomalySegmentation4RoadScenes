@@ -135,7 +135,7 @@ def main(args):
 
     print("---------------------------------------")
     print("Method used:", args.method)
-    print("Temperature used:" args.temperature)
+    print("Temperature used:", args.temperature)
     print("Took", time.time() - start, "seconds")
     print("======================================")
     print("Per-Class IoU:")
