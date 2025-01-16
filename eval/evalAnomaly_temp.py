@@ -259,9 +259,7 @@ def main():
         print(f'FPR@TPR95: {round(fpr*100.0, 3)}')
 
         file.write(
-            f'Method: {args.method}     Temperature: {args.temperature}       Dataset: {dataset_name}   
-            AUPRC score: {round(prc_auc * 100.0, 3)}   
-            FPR@TPR95: {round(fpr * 100.0, 3)}\n'
+            f'Method: {args.method}     Temperature: {args.temperature}       Dataset: {dataset_name}    AUPRC score: {round(prc_auc * 100.0, 3)}    FPR@TPR95: {round(fpr * 100.0, 3)}\n'
         )
 
     file.close()
