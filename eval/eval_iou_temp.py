@@ -120,6 +120,9 @@ def main(args):
 
         # ________________________ msp, max_logit, max_entropy _______________________ ends
 
+        print(f"Predictions unique values: {torch.unique(anomaly_result)}") # check if comes here
+
+
         iouEvalVal.addBatch(anomaly_result, labels)
 
         filenameSave = filename[0].split("leftImg8bit/")[1] 
