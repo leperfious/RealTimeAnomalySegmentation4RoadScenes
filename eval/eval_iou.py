@@ -95,7 +95,7 @@ def main(args):
     start = time.time()
 
     # To write results tab1 to file results1_mIoU.txt
-    results_file = open("results1_mIoU.txt", "w")
+    results_file = open("results1_mIoU.txt", "a")
 
     for step, (images, labels, filename, _ ) in enumerate(loader):
         if (not args.cpu):
