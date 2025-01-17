@@ -108,7 +108,7 @@ def main(args):
         # ________________________ msp, max_logit, max_entropy _______________________ starts
 
         if args.method == 'msp':
-            softmax_probability = F.softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
+            softmax_probability = F.softmax(outputs/args.temperature, dim=1)  # Changed from dim=1 to dim=0
             anomaly_result = torch.argmax(softmax_probability, dim=1).unsqueeze(1).data
         elif args.method == 'max_logit':
             anomaly_result = torch.argmax(outputs, dim=1).unsqueeze(1).data  # Changed from dim=1 to dim=0
