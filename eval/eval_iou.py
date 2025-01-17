@@ -108,19 +108,19 @@ def main(args):
         # ________________________ msp, max_logit, max_entropy _______________________ starts
 
         if args.method == 'msp':
-            softmax_probability = F.softmax(outputs, dim = 1)
-            anomaly_result = torch.argmax(softmax_probability, dim = 1).unsqueeze(1).data
+            softmax_probability = F.softmax(outputs, dim=0)  # Changed from dim=1 to dim=0
+            anomaly_result = torch.argmax(softmax_probability, dim=0).unsqueeze(1).data
         elif args.method == 'max_logit':
-            anomaly_result = torch.argmax(outputs, dim = 1).unsqueeze(1).data
+            anomaly_result = torch.argmax(outputs, dim=0).unsqueeze(1).data  # Changed from dim=1 to dim=0
         elif args.method == 'max_entropy':
-            softmax_probability = F.softmax(outputs, dim=1)
-            log_softmax_probs = F.log_softmax(outputs, dim=1)
-            entropy = -torch.sum(softmax_probability * log_softmax_probs, dim=1)
-            anomaly_result = torch.argmax(entropy, dim=1).unsqueeze(1).data
+            softmax_probability = F.softmax(outputs, dim=0)  # Changed from dim=1 to dim=0
+            log_softmax_probs = F.log_softmax(outputs, dim=0)  # Changed from dim=1 to dim=0
+            entropy = -torch.sum(softmax_probability * log_softmax_probs, dim=0)  # Changed from dim=1 to dim=0
+            anomaly_result = torch.argmax(entropy, dim=0).unsqueeze(1).data  # Changed from dim=1 to dim=0
 
         # ________________________ msp, max_logit, max_entropy _______________________ ends
 
-        iouEvalVal.addBatch(outputs.max(1)[1].unsqueeze(1).data, labels)
+        iouEvalVal.addBatch(anomaly_result, labels)
 
         filenameSave = filename[0].split("leftImg8bit/")[1] 
         print(step, filenameSave)
