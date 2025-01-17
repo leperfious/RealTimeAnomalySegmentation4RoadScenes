@@ -108,20 +108,17 @@ def main(args):
         # ________________________ msp, max_logit, max_entropy _______________________ starts
 
         if args.method == 'msp':
-            softmax_probability = F.softmax(outputs / args.temperature , dim = 1)
-            anomaly_result = torch.argmax(softmax_probability, dim = 1).unsqueeze(1).data
+            softmax_probability = F.softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
+            anomaly_result = torch.argmax(softmax_probability, dim=1).unsqueeze(1).data
         elif args.method == 'max_logit':
-            anomaly_result = torch.argmax(outputs, dim = 1).unsqueeze(1).data
+            anomaly_result = torch.argmax(outputs, dim=1).unsqueeze(1).data  # Changed from dim=1 to dim=0
         elif args.method == 'max_entropy':
-            softmax_probability = F.softmax(outputs, dim=1)
-            log_softmax_probs = F.log_softmax(outputs, dim=1)
-            entropy = -torch.sum(softmax_probability * log_softmax_probs, dim=1)
-            anomaly_result = torch.argmax(entropy, dim=1).unsqueeze(1).data
+            softmax_probability = F.softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
+            log_softmax_probs = F.log_softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
+            entropy = -torch.sum(softmax_probability * log_softmax_probs, dim=1)  # Changed from dim=1 to dim=0
+            anomaly_result = torch.argmax(entropy, dim=1).unsqueeze(1).data  # Changed from dim=1 to dim=0
 
         # ________________________ msp, max_logit, max_entropy _______________________ ends
-
-        print(f"Predictions unique values: {torch.unique(anomaly_result)}") # check if comes here
-
 
         iouEvalVal.addBatch(anomaly_result, labels)
 
@@ -138,12 +135,12 @@ def main(args):
 
     print("---------------------------------------")
     print("Method used:", args.method)
-    print("Temperature used:", args.temperature)
+    print("Temperature scale used:", args.temperature)
     print("Took", time.time() - start, "seconds")
     print("======================================")
     print("Per-Class IoU:")
     results_file.write(f"Method used: {args.method}\n")
-    results_file.write(f"Temperature used: {args.temperature}\n")
+    results_file.write(f"Temperature scale used: {args.temperature}\n")
     results_file.write("Per-Class IoU:\n")
     for i, label in enumerate(["Road", 
                                "Sidewalk", 
@@ -177,11 +174,9 @@ if __name__ == '__main__':
     parser.add_argument('--loadDir', default="../trained_models/")
     parser.add_argument('--loadWeights', default="erfnet_pretrained.pth")
     parser.add_argument('--loadModel', default="erfnet.py")
-    parser.add_argument('--subset', default="val")
     parser.add_argument('--temperature', type=float, default=1) #  for the temperature scaling, default is 1
-    parser.add_argument('--datadir', default="/home/shyam/ViT-Adapter/segmentation/data/cityscapes/")
-    #  parser.add_argument('--datadir', default="/content/datasets/cityscapes")  # It needed to be corrected, i bring it from colab acc.
-    #  parser.add_argument('--testdir', default="/content/datasets/validation_dataset")
+    parser.add_argument('--subset', default="val")
+    parser.add_argument('--datadir', default="/content/datasets/cityscapes")  # It needed to be corrected, i bring it from colab acc.
     parser.add_argument('--num-workers', type=int, default=4)
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--cpu', action='store_true')
