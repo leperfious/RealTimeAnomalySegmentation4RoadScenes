@@ -1,0 +1,188 @@
+
+Method used: msp
+Temperature scale used: 0.5
+======================================
+Per-Class IoU:
+Road: 97.62%
+Sidewalk: 81.37%
+Building: 90.77%
+Wall: 49.43%
+Fence: 54.93%
+Pole: 60.81%
+Traffic Light: 62.60%
+Traffic Sign: 72.31%
+Vegetation: 91.35%
+Terrain: 60.96%
+Sky: 93.38%
+Person: 76.11%
+Rider: 53.45%
+Car: 92.91%
+Truck: 72.78%
+Bus: 78.87%
+Train: 63.86%
+Motorcycle: 46.40%
+Bicycle: 71.89%
+======================================
+MEAN IoU: 72.20%
+
+
+Method used: msp
+Temperature scale used: 0.75
+======================================
+Per-Class IoU:
+Road: 97.62%
+Sidewalk: 81.37%
+Building: 90.77%
+Wall: 49.43%
+Fence: 54.93%
+Pole: 60.81%
+Traffic Light: 62.60%
+Traffic Sign: 72.31%
+Vegetation: 91.35%
+Terrain: 60.96%
+Sky: 93.38%
+Person: 76.11%
+Rider: 53.45%
+Car: 92.91%
+Truck: 72.78%
+Bus: 78.87%
+Train: 63.86%
+Motorcycle: 46.40%
+Bicycle: 71.89%
+======================================
+MEAN IoU: 72.20%
+
+
+Method used: msp
+Temperature scale used: 1.1
+======================================
+Per-Class IoU:
+Road: 97.62%
+Sidewalk: 81.37%
+Building: 90.77%
+Wall: 49.43%
+Fence: 54.93%
+Pole: 60.81%
+Traffic Light: 62.60%
+Traffic Sign: 72.31%
+Vegetation: 91.35%
+Terrain: 60.96%
+Sky: 93.38%
+Person: 76.11%
+Rider: 53.45%
+Car: 92.91%
+Truck: 72.78%
+Bus: 78.87%
+Train: 63.86%
+Motorcycle: 46.40%
+Bicycle: 71.89%
+======================================
+MEAN IoU: 72.20%
+
+
+Method used: msp
+Temperature scale used: 1.5
+======================================
+Per-Class IoU:
+Road: 97.62%
+Sidewalk: 81.37%
+Building: 90.77%
+Wall: 49.43%
+Fence: 54.93%
+Pole: 60.81%
+Traffic Light: 62.60%
+Traffic Sign: 72.31%
+Vegetation: 91.35%
+Terrain: 60.96%
+Sky: 93.38%
+Person: 76.11%
+Rider: 53.45%
+Car: 92.91%
+Truck: 72.78%
+Bus: 78.87%
+Train: 63.86%
+Motorcycle: 46.40%
+Bicycle: 71.89%
+======================================
+MEAN IoU: 72.20%
+
+
+Method used: msp
+Temperature scale used: 1.6
+======================================
+Per-Class IoU:
+Road: 97.62%
+Sidewalk: 81.37%
+Building: 90.77%
+Wall: 49.43%
+Fence: 54.93%
+Pole: 60.81%
+Traffic Light: 62.60%
+Traffic Sign: 72.31%
+Vegetation: 91.35%
+Terrain: 60.96%
+Sky: 93.38%
+Person: 76.11%
+Rider: 53.45%
+Car: 92.91%
+Truck: 72.78%
+Bus: 78.87%
+Train: 63.86%
+Motorcycle: 46.40%
+Bicycle: 71.89%
+======================================
+MEAN IoU: 72.20%
+
+
+Method used: msp
+Temperature scale used: 1.75
+======================================
+Per-Class IoU:
+Road: 97.62%
+Sidewalk: 81.37%
+Building: 90.77%
+Wall: 49.43%
+Fence: 54.93%
+Pole: 60.81%
+Traffic Light: 62.60%
+Traffic Sign: 72.31%
+Vegetation: 91.35%
+Terrain: 60.96%
+Sky: 93.38%
+Person: 76.11%
+Rider: 53.45%
+Car: 92.91%
+Truck: 72.78%
+Bus: 78.87%
+Train: 63.86%
+Motorcycle: 46.40%
+Bicycle: 71.89%
+======================================
+MEAN IoU: 72.20%
+
+
+Method used: msp
+Temperature scale used: 2.0
+======================================
+Per-Class IoU:
+Road: 97.62%
+Sidewalk: 81.37%
+Building: 90.77%
+Wall: 49.43%
+Fence: 54.93%
+Pole: 60.81%
+Traffic Light: 62.60%
+Traffic Sign: 72.31%
+Vegetation: 91.35%
+Terrain: 60.96%
+Sky: 93.38%
+Person: 76.11%
+Rider: 53.45%
+Car: 92.91%
+Truck: 72.78%
+Bus: 78.87%
+Train: 63.86%
+Motorcycle: 46.40%
+Bicycle: 71.89%
+======================================
+MEAN IoU: 72.20%
