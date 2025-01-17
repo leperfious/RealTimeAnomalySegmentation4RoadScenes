@@ -179,7 +179,8 @@ if __name__ == '__main__':
     parser.add_argument('--loadModel', default="erfnet.py")
     parser.add_argument('--subset', default="val")
     parser.add_argument('--temperature', type=float, default=1) #  for the temperature scaling, default is 1
-    parser.add_argument('--datadir', default="/content/datasets/cityscapes")  # It needed to be corrected, i bring it from colab acc.
+    parser.add_argument('--datadir', default="/home/shyam/ViT-Adapter/segmentation/data/cityscapes/")
+    #  parser.add_argument('--datadir', default="/content/datasets/cityscapes")  # It needed to be corrected, i bring it from colab acc.
     #  parser.add_argument('--testdir', default="/content/datasets/validation_dataset")
     parser.add_argument('--num-workers', type=int, default=4)
     parser.add_argument('--batch-size', type=int, default=1)
