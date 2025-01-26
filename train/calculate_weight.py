@@ -4,21 +4,22 @@ import numpy as np
 from glob import glob
 from PIL import Image
 
-NUM_CLASSES = 19  # Classes 0–18 (excluding void, which is 255)
+NUM_CLASSES = 20  # 19 known classes + void (mapped to class 19)
 
-def calculate_weights(gt_dir, method="inverse_frequency", save_path=None):
+def calculate_weights(gt_dir, method, save_path=None):
     """
     Calculate class weights based on the label distribution in gtFine.
     Args:
         gt_dir (str): Path to the gtFine/train directory.
         method (str): Weight calculation method. Options are:
-                      - "inverse_frequency" (default for ERFNet encoder/decoder)
-                      - "enet" (logarithmic formula for ENet)
+                      - "inverse_frequency" (for ERFNet encoder)
+                      - "enet" (logarithmic formula for ERFNet decoder/ENet)
+                      - "custom_decoder" (a custom formula for ERFNet decoder)
         save_path (str): Path to save the calculated weights. If None, weights are not saved.
     Returns:
         weights (torch.Tensor): Calculated class weights.
     """
-    label_counts = torch.zeros(NUM_CLASSES)  # Only count classes 0–18 (ignore void)
+    label_counts = torch.zeros(NUM_CLASSES)  # Count classes 0–19 (void is class 19)
 
     # Get all label images
     label_files = glob(os.path.join(gt_dir, "**/*_labelTrainIds.png"), recursive=True)
@@ -29,11 +30,11 @@ def calculate_weights(gt_dir, method="inverse_frequency", save_path=None):
         label_img = Image.open(label_file)
         label_array = np.array(label_img)
 
-        # Filter valid pixel values (0–18), ignore void (255)
-        valid_pixels = label_array[(label_array >= 0) & (label_array < NUM_CLASSES)]
+        # Map void pixels (255) to class 19
+        label_array[label_array == 255] = 19
 
         # Update pixel counts
-        label_tensor = torch.tensor(valid_pixels, dtype=torch.long)
+        label_tensor = torch.tensor(label_array, dtype=torch.long)
         label_counts += torch.bincount(label_tensor.flatten(), minlength=NUM_CLASSES)
 
     # Safeguard against zero pixels
@@ -58,6 +59,13 @@ def calculate_weights(gt_dir, method="inverse_frequency", save_path=None):
                 weights[i] = torch.log(k + (1 / (label_counts[i] / total_samples)))
             else:
                 weights[i] = 0.0  # Assign 0 weight to classes with no pixels
+    elif method == "custom_decoder":
+        # Example custom decoder weighting: sqrt of inverse frequency
+        for i in range(NUM_CLASSES):
+            if label_counts[i] > 0:
+                weights[i] = torch.sqrt(1 / (label_counts[i] / total_samples))
+            else:
+                weights[i] = 0.0  # Assign 0 weight to classes with no pixels
     else:
         raise ValueError(f"Unsupported weight calculation method: {method}")
 
@@ -76,21 +84,21 @@ def main():
     gt_train_dir = "/content/datasets/cityscapes/gtFine/train"  # Path to gtFine/train
     assert os.path.exists(gt_train_dir), "Error: gtFine/train directory not found!"
 
-    # Calculate and save weights for ERFNet Encoder
+    # Calculate and save weights for ERFNet Encoder (inverse frequency)
     erfnet_encoder_weights = calculate_weights(
         gt_train_dir, method="inverse_frequency", save_path="/content/erfnet_encoder_weights.txt"
     )
     torch.save(erfnet_encoder_weights, "/content/erfnet_encoder_weights.pth")
     print("ERFNet Encoder weights:", erfnet_encoder_weights.tolist())
 
-    # Calculate and save weights for ERFNet Decoder
+    # Calculate and save weights for ERFNet Decoder (custom formula)
     erfnet_decoder_weights = calculate_weights(
-        gt_train_dir, method="inverse_frequency", save_path="/content/erfnet_decoder_weights.txt"
+        gt_train_dir, method="custom_decoder", save_path="/content/erfnet_decoder_weights.txt"
     )
     torch.save(erfnet_decoder_weights, "/content/erfnet_decoder_weights.pth")
     print("ERFNet Decoder weights:", erfnet_decoder_weights.tolist())
 
-    # Calculate and save weights for ENet
+    # Calculate and save weights for ENet (ENet formula)
     enet_weights = calculate_weights(
         gt_train_dir, method="enet", save_path="/content/enet_weights.txt"
     )
