@@ -4,7 +4,7 @@ import numpy as np
 from glob import glob
 from PIL import Image
 
-NUM_CLASSES = 20  # 19 classes + void
+NUM_CLASSES = 19  # Classes 0–18 (excluding void, which is 255)
 
 def calculate_weights(gt_dir, method="inverse_frequency", save_path=None):
     """
@@ -18,23 +18,22 @@ def calculate_weights(gt_dir, method="inverse_frequency", save_path=None):
     Returns:
         weights (torch.Tensor): Calculated class weights.
     """
-    label_counts = torch.zeros(NUM_CLASSES)
+    label_counts = torch.zeros(NUM_CLASSES)  # Only count classes 0–18 (ignore void)
 
     # Get all label images
     label_files = glob(os.path.join(gt_dir, "**/*_labelTrainIds.png"), recursive=True)
+    print(f"Found {len(label_files)} label files.")
 
     # Count pixel occurrences for each class
     for label_file in label_files:
         label_img = Image.open(label_file)
-        label_array = np.array(label_img)  # Convert PIL image to NumPy array
+        label_array = np.array(label_img)
 
-        # Filter out invalid pixel values
-        label_array = label_array[(label_array >= 0) & (label_array < NUM_CLASSES)]
+        # Filter valid pixel values (0–18), ignore void (255)
+        valid_pixels = label_array[(label_array >= 0) & (label_array < NUM_CLASSES)]
 
-        # Convert to tensor
-        label_tensor = torch.tensor(label_array, dtype=torch.long)  # Convert NumPy array to tensor
-
-        # Update label counts
+        # Update pixel counts
+        label_tensor = torch.tensor(valid_pixels, dtype=torch.long)
         label_counts += torch.bincount(label_tensor.flatten(), minlength=NUM_CLASSES)
 
     # Safeguard against zero pixels
