@@ -27,7 +27,14 @@ def calculate_weights(gt_dir, method="inverse_frequency", save_path=None):
     for label_file in label_files:
         label_img = Image.open(label_file)
         label_array = np.array(label_img)  # Convert PIL image to NumPy array
+
+        # Filter out invalid pixel values
+        label_array = label_array[(label_array >= 0) & (label_array < NUM_CLASSES)]
+
+        # Convert to tensor
         label_tensor = torch.tensor(label_array, dtype=torch.long)  # Convert NumPy array to tensor
+
+        # Update label counts
         label_counts += torch.bincount(label_tensor.flatten(), minlength=NUM_CLASSES)
 
     # Safeguard against zero pixels
