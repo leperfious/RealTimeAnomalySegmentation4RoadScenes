@@ -21,7 +21,7 @@ def calculate_weights(gt_dir, method="inverse_frequency", save_path=None):
     label_counts = torch.zeros(NUM_CLASSES)
 
     # Get all label images
-    label_files = glob(os.path.join(gt_dir, "**/*_trainId.png"), recursive=True)
+    label_files = glob(os.path.join(gt_dir, "**/*_labelTrainIds.png"), recursive=True)
 
     # Count pixel occurrences for each class
     for label_file in label_files:
