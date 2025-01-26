@@ -1,7 +1,7 @@
 import os
 import torch
+import numpy as np
 from glob import glob
-from torchvision.transforms import ToTensor
 from PIL import Image
 
 NUM_CLASSES = 20  # 19 classes + void
@@ -26,7 +26,8 @@ def calculate_weights(gt_dir, method="inverse_frequency", save_path=None):
     # Count pixel occurrences for each class
     for label_file in label_files:
         label_img = Image.open(label_file)
-        label_tensor = torch.tensor(label_img, dtype=torch.long)  # Convert to tensor
+        label_array = np.array(label_img)  # Convert PIL image to NumPy array
+        label_tensor = torch.tensor(label_array, dtype=torch.long)  # Convert NumPy array to tensor
         label_counts += torch.bincount(label_tensor.flatten(), minlength=NUM_CLASSES)
 
     # Safeguard against zero pixels
