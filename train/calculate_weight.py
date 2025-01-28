@@ -47,8 +47,10 @@ def calculate_weights(class_pixel_counts, total_pixels, architecture):
         class_proportions = class_pixel_counts / total_pixels
         class_weights = 1 / (np.sqrt(class_proportions) + 1e-6)
     
-    # Normalize weights to ensure values remain within a reasonable range
-    class_weights = class_weights / np.max(class_weights) * 10
+    # Apply min-max normalization to ensure weights remain meaningful (range 1-10)
+    min_val, max_val = np.min(class_weights), np.max(class_weights)
+    class_weights = 1 + (class_weights - min_val) / (max_val - min_val) * 9
+    
     return class_weights
 
 # Main script
