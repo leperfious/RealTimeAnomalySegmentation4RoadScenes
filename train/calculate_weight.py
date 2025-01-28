@@ -34,27 +34,21 @@ def calculate_weights(class_pixel_counts, total_pixels, architecture):
     if architecture == 'ERFNet_encoder':
         # Use inverse class frequency for encoder, ensuring no division by zero
         class_weights = total_pixels / (class_pixel_counts + 1e-6)
-        # Cap extreme values to avoid instability
-        class_weights = np.clip(class_weights, a_min=0, a_max=1000)
     elif architecture == 'ERFNet_decoder':
         # Use median frequency balancing for decoder
         median_frequency = np.median(class_pixel_counts[class_pixel_counts > 0] / total_pixels)
         class_weights = median_frequency / ((class_pixel_counts / total_pixels) + 1e-6)
-        # Cap extreme values to avoid instability
-        class_weights = np.clip(class_weights, a_min=0, a_max=1000)
     elif architecture == 'ENet':
         # Use logarithmic weighting for ENet
         class_proportions = class_pixel_counts / total_pixels
         class_weights = 1 / (np.log(1.02 + class_proportions) + 1e-6)
-        # Cap extreme values
-        class_weights = np.clip(class_weights, a_min=0, a_max=100)
     elif architecture == 'BiSeNet':
         # Use inverse square root of frequency for BiSeNet
         class_proportions = class_pixel_counts / total_pixels
         class_weights = 1 / (np.sqrt(class_proportions) + 1e-6)
-        # Cap extreme values
-        class_weights = np.clip(class_weights, a_min=0, a_max=100)
-
+    
+    # Normalize weights to ensure values remain within a reasonable range
+    class_weights = class_weights / np.max(class_weights) * 10
     return class_weights
 
 # Main script
