@@ -1,4 +1,5 @@
 import os
+import argparse
 import numpy as np
 from PIL import Image
 
@@ -31,33 +32,41 @@ def calculate_weights(class_pixel_counts, total_pixels, architecture):
     class_weights = None
 
     if architecture == 'ERFNet_encoder':
-        # Use inverse class frequency for encoder
+        # Use inverse class frequency for encoder, ensuring no division by zero
         class_weights = total_pixels / (class_pixel_counts + 1e-6)
     elif architecture == 'ERFNet_decoder':
-        # Use median frequency balancing for decoder
+        # Use median frequency balancing for decoder, ensuring no division by zero
         median_frequency = np.median(class_pixel_counts[class_pixel_counts > 0] / total_pixels)
-        class_weights = median_frequency / (class_pixel_counts / total_pixels + 1e-6)
+        class_weights = median_frequency / ((class_pixel_counts / total_pixels) + 1e-6)
     elif architecture == 'ENet':
-        # Use logarithmic weighting for ENet
+        # Use logarithmic weighting for ENet, avoiding undefined values
         class_proportions = class_pixel_counts / total_pixels
         class_weights = 1 / (np.log(1.02 + class_proportions) + 1e-6)
     elif architecture == 'BiSeNet':
-        # Use inverse square root of frequency for BiSeNet
+        # Use inverse square root of frequency for BiSeNet, avoiding undefined values
         class_proportions = class_pixel_counts / total_pixels
         class_weights = 1 / (np.sqrt(class_proportions) + 1e-6)
 
-    # Normalize weights to avoid excessively large values
-    class_weights = class_weights / np.sum(class_weights)
     return class_weights
 
 # Main script
 def main():
-    # Define paths to Cityscapes dataset directories
-    cityscapes_dir = '/content/datasets/cityscapes'
-    gtFine_dir = os.path.join(cityscapes_dir, 'gtFine/train')
+    parser = argparse.ArgumentParser(description="Calculate class weights for semantic segmentation.")
+    parser.add_argument(
+        '--gtFine_dir', 
+        type=str, 
+        required=True, 
+        help="Path to the gtFine directory containing the 'train' subdirectory."
+    )
+    parser.add_argument(
+        '--output_file', 
+        type=str, 
+        default='weights.txt', 
+        help="Path to save the output weights file."
+    )
+    args = parser.parse_args()
 
-    # Output file
-    output_file = 'weights.txt'
+    gtFine_dir = os.path.join(args.gtFine_dir, 'train')
 
     print("Calculating class frequencies...")
     class_pixel_counts, total_pixels = calculate_class_frequencies(gtFine_dir, num_classes)
@@ -65,16 +74,19 @@ def main():
     architectures = ['ERFNet_encoder', 'ERFNet_decoder', 'ENet', 'BiSeNet']
 
     # Calculate and save weights for each architecture
-    with open(output_file, 'w') as f:
+    with open(args.output_file, 'w') as f:
         for architecture in architectures:
             print(f"Calculating weights for {architecture}...")
             class_weights = calculate_weights(class_pixel_counts, total_pixels, architecture)
 
+            # Format weights to have higher precision and avoid normalization to 0
+            class_weights = [float(f"{w:.6f}") for w in class_weights]
+
             # Save weights to file
             f.write(f"{architecture} weights:\n")
-            f.write(','.join([f"{w:.6f}" for w in class_weights]) + '\n')
+            f.write(','.join(map(str, class_weights)) + '\n')
 
-    print(f"Class weights saved to {output_file}")
+    print(f"Class weights saved to {args.output_file}")
 
 if __name__ == '__main__':
     main()
