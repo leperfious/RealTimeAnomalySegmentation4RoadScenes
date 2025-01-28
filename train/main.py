@@ -29,7 +29,7 @@ from iouEval import iouEval, getColorEntry
 from shutil import copyfile
 
 NUM_CHANNELS = 3
-NUM_CLASSES = 20 #pascal=22, cityscapes=20
+NUM_CLASSES = 20 # 19 classes + void
 
 color_transform = Colorize(NUM_CLASSES)
 image_transform = ToPILImage()
@@ -417,7 +417,7 @@ def main(args):
         #print(torch.load(args.state))
         model = load_my_state_dict(model, torch.load(args.state))
 
-    """
+    '''
     def weights_init(m):
         classname = m.__class__.__name__
         if classname.find('Conv') != -1:
@@ -440,7 +440,7 @@ def main(args):
     f = open('weights5.txt', 'w')
     f.write(str(model.state_dict()))
     f.close()
-    """
+    '''
 
     #train(args, model)
     if (not args.decoder):

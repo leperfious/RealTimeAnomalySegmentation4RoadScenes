@@ -1,110 +1,80 @@
 import os
-import torch
 import numpy as np
-from glob import glob
 from PIL import Image
 
-NUM_CLASSES = 20  # 19 known classes + void (mapped to class 19)
+# Number of classes (19 known + 1 void)
+num_classes = 20
 
-def calculate_weights(gt_dir, method, save_path=None):
-    """
-    Calculate class weights based on the label distribution in gtFine.
-    Args:
-        gt_dir (str): Path to the gtFine/train directory.
-        method (str): Weight calculation method. Options are:
-                      - "inverse_frequency" (for ERFNet encoder)
-                      - "enet" (logarithmic formula for ERFNet decoder/ENet)
-                      - "custom_decoder" (a custom formula for ERFNet decoder)
-        save_path (str): Path to save the calculated weights. If None, weights are not saved.
-    Returns:
-        weights (torch.Tensor): Calculated class weights.
-    """
-    label_counts = torch.zeros(NUM_CLASSES)  # Count classes 0–19 (void is class 19)
+# Function to calculate class pixel frequencies
+def calculate_class_frequencies(gtFine_dir, num_classes):
+    class_pixel_counts = np.zeros(num_classes, dtype=np.int64)
+    total_pixels = 0
 
-    # Get all label images
-    label_files = glob(os.path.join(gt_dir, "**/*_labelTrainIds.png"), recursive=True)
-    print(f"Found {len(label_files)} label files.")
+    # Iterate through all ground truth images
+    for root, _, files in os.walk(gtFine_dir):
+        for file in files:
+            if file.endswith('_labelTrainIds.png'):
+                # Load the ground truth image
+                gt_image = np.array(Image.open(os.path.join(root, file)))
 
-    # Count pixel occurrences for each class
-    for label_file in label_files:
-        label_img = Image.open(label_file)
-        label_array = np.array(label_img)
+                # Count pixels for each class
+                for class_id in range(num_classes):
+                    class_pixel_counts[class_id] += np.sum(gt_image == class_id)
 
-        # Map void pixels (255) to class 19
-        label_array[label_array == 255] = 19
+                # Update total pixel count
+                total_pixels += gt_image.size
 
-        # Update pixel counts
-        label_tensor = torch.tensor(label_array, dtype=torch.long)
-        label_counts += torch.bincount(label_tensor.flatten(), minlength=NUM_CLASSES)
+    return class_pixel_counts, total_pixels
 
-    # Safeguard against zero pixels
-    print(f"Pixel counts for each class: {label_counts.tolist()}")
-    total_samples = label_counts.sum()
+# Function to calculate weights for different architectures
+def calculate_weights(class_pixel_counts, total_pixels, architecture):
+    class_weights = None
 
-    # Initialize weights
-    weights = torch.zeros(NUM_CLASSES)
+    if architecture == 'ERFNet_encoder':
+        # Use inverse class frequency for encoder
+        class_weights = total_pixels / (class_pixel_counts + 1e-6)
+    elif architecture == 'ERFNet_decoder':
+        # Use median frequency balancing for decoder
+        median_frequency = np.median(class_pixel_counts[class_pixel_counts > 0] / total_pixels)
+        class_weights = median_frequency / (class_pixel_counts / total_pixels + 1e-6)
+    elif architecture == 'ENet':
+        # Use logarithmic weighting for ENet
+        class_proportions = class_pixel_counts / total_pixels
+        class_weights = 1 / (np.log(1.02 + class_proportions) + 1e-6)
+    elif architecture == 'BiSeNet':
+        # Use inverse square root of frequency for BiSeNet
+        class_proportions = class_pixel_counts / total_pixels
+        class_weights = 1 / (np.sqrt(class_proportions) + 1e-6)
 
-    if method == "inverse_frequency":
-        # Inverse frequency: 1 / (class frequency / total samples)
-        for i in range(NUM_CLASSES):
-            if label_counts[i] > 0:
-                weights[i] = 1 / (label_counts[i] / total_samples)
-            else:
-                weights[i] = 0.0  # Assign 0 weight to classes with no pixels
-    elif method == "enet":
-        # ENet's logarithmic weighting formula: w_c = ln(k + 1/f_c)
-        k = 1.02  # Slightly higher than 1 to avoid extreme scaling
-        for i in range(NUM_CLASSES):
-            if label_counts[i] > 0:
-                weights[i] = torch.log(k + (1 / (label_counts[i] / total_samples)))
-            else:
-                weights[i] = 0.0  # Assign 0 weight to classes with no pixels
-    elif method == "custom_decoder":
-        # Example custom decoder weighting: sqrt of inverse frequency
-        for i in range(NUM_CLASSES):
-            if label_counts[i] > 0:
-                weights[i] = torch.sqrt(1 / (label_counts[i] / total_samples))
-            else:
-                weights[i] = 0.0  # Assign 0 weight to classes with no pixels
-    else:
-        raise ValueError(f"Unsupported weight calculation method: {method}")
+    # Normalize weights to avoid excessively large values
+    class_weights = class_weights / np.sum(class_weights)
+    return class_weights
 
-    # Save weights to a .txt file (optional)
-    if save_path:
-        with open(save_path, "w") as f:
-            f.write(f"Class Weights ({method} method):\n")
-            for i, weight in enumerate(weights):
-                f.write(f"Class {i}: {weight.item():.6f}\n")
-        print(f"Class weights saved to {save_path}")
-
-    return weights
-
-
+# Main script
 def main():
-    gt_train_dir = "/content/datasets/cityscapes/gtFine/train"  # Path to gtFine/train
-    assert os.path.exists(gt_train_dir), "Error: gtFine/train directory not found!"
+    # Define paths to Cityscapes dataset directories
+    cityscapes_dir = '/content/datasets/cityscapes'
+    gtFine_dir = os.path.join(cityscapes_dir, 'gtFine/train')
 
-    # Calculate and save weights for ERFNet Encoder (inverse frequency)
-    erfnet_encoder_weights = calculate_weights(
-        gt_train_dir, method="inverse_frequency", save_path="/content/erfnet_encoder_weights.txt"
-    )
-    torch.save(erfnet_encoder_weights, "/content/erfnet_encoder_weights.pth")
-    print("ERFNet Encoder weights:", erfnet_encoder_weights.tolist())
+    # Output file
+    output_file = 'weights.txt'
 
-    # Calculate and save weights for ERFNet Decoder (custom formula)
-    erfnet_decoder_weights = calculate_weights(
-        gt_train_dir, method="custom_decoder", save_path="/content/erfnet_decoder_weights.txt"
-    )
-    torch.save(erfnet_decoder_weights, "/content/erfnet_decoder_weights.pth")
-    print("ERFNet Decoder weights:", erfnet_decoder_weights.tolist())
+    print("Calculating class frequencies...")
+    class_pixel_counts, total_pixels = calculate_class_frequencies(gtFine_dir, num_classes)
 
-    # Calculate and save weights for ENet (ENet formula)
-    enet_weights = calculate_weights(
-        gt_train_dir, method="enet", save_path="/content/enet_weights.txt"
-    )
-    torch.save(enet_weights, "/content/enet_weights.pth")
-    print("ENet weights:", enet_weights.tolist())
+    architectures = ['ERFNet_encoder', 'ERFNet_decoder', 'ENet', 'BiSeNet']
 
+    # Calculate and save weights for each architecture
+    with open(output_file, 'w') as f:
+        for architecture in architectures:
+            print(f"Calculating weights for {architecture}...")
+            class_weights = calculate_weights(class_pixel_counts, total_pixels, architecture)
+
+            # Save weights to file
+            f.write(f"{architecture} weights:\n")
+            f.write(','.join([f"{w:.6f}" for w in class_weights]) + '\n')
+
+    print(f"Class weights saved to {output_file}")
 
 if __name__ == '__main__':
     main()
