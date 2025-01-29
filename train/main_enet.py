@@ -476,7 +476,5 @@ if __name__ == '__main__':
     parser.add_argument('--iouVal', action='store_true', default=True)  
     parser.add_argument('--resume', action='store_true')    #Use this flag to load last checkpoint for training  
 
-    assert args.model.lower() == "enet", "Error: Only ENet training is supported in this script"
-
 
     main(parser.parse_args())
