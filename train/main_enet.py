@@ -261,7 +261,8 @@ def train(args, model, enc=False):
 
                 inputs = Variable(images, volatile=True)    #volatile flag makes it free backward or outputs for eval
                 targets = Variable(labels, volatile=True)
-                outputs = model(inputs, only_encode=enc) 
+                #outputs = model(inputs, only_encode=enc) 
+                outputs = model(inputs)
                 
                 loss = criterion(outputs, targets[:, 0])
                 # epoch_loss_val.append(loss.data[0])
@@ -461,9 +462,9 @@ if __name__ == '__main__':
     parser.add_argument('--state')
 
     parser.add_argument('--port', type=int, default=8097)
-    parser.add_argument('--datadir', default=("/content/datasets/cityscapes/"))
+    parser.add_argument('--datadir', default=os.getenv("CITYSCAPES_DATASET", "/content/datasets/cityscapes/"))  
     parser.add_argument('--height', type=int, default=512)
-    parser.add_argument('--num-epochs', type=int, default=1)
+    parser.add_argument('--num-epochs', type=int, default=30)
     parser.add_argument('--num-workers', type=int, default=4)
     parser.add_argument('--batch-size', type=int, default=6)
     parser.add_argument('--steps-loss', type=int, default=50)
