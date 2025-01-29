@@ -114,7 +114,7 @@ def train(args, model):
     model_txt_path = os.path.join(savedir, "model.txt")
 
 
-    if (not os.path.exists(log_path)):  
+    if (not os.path.exists(automated_log_path)):  
         with open(automated_log_path, "a") as myfile:
             myfile.write("Epoch\t\tTrain-loss\t\tTest-loss\t\tTrain-IoU\t\tTest-IoU\t\tlearningRate")
 
