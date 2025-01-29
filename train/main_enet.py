@@ -470,11 +470,13 @@ if __name__ == '__main__':
     parser.add_argument('--steps-plot', type=int, default=50)
     parser.add_argument('--epochs-save', type=int, default=0)    #You can use this value to save model every X epochs
     parser.add_argument('--savedir', required=True)
-    parser.add_argument('--decoder', action='store_true')
 
     parser.add_argument('--visualize', action='store_true')
     parser.add_argument('--iouTrain', action='store_true', default=False) #recommended: False (takes more time to train otherwise)
     parser.add_argument('--iouVal', action='store_true', default=True)  
     parser.add_argument('--resume', action='store_true')    #Use this flag to load last checkpoint for training  
+
+    assert args.model.lower() == "enet", "Error: Only ENet training is supported in this script"
+
 
     main(parser.parse_args())
