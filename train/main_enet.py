@@ -1,8 +1,3 @@
-# Main code for training ERFNet model in Cityscapes dataset
-# Sept 2017
-# Eduardo Romera
-#######################
-
 import os
 import random
 import time
@@ -45,11 +40,11 @@ class MyCoTransform(object):
     def __init__(self, augment=True, height=512):
         self.augment = augment
         self.height = height
-        pass
+        
     def __call__(self, input, target):
-        # do something to both images
-        input =  Resize(self.height, Image.BILINEAR)(input)
-        target = Resize(self.height, Image.NEAREST)(target)
+        # do something to both images -----------------------------------
+        input = Resize((self.height, self.height), Image.BILINEAR)(input)
+        target = Resize((self.height, self.height), Image.NEAREST)(target)
 
         if(self.augment):
             # Random hflip
@@ -82,7 +77,7 @@ class CrossEntropyLoss2d(torch.nn.Module):
     def __init__(self, weight=None):
         super().__init__()
 
-        self.loss = torch.nn.NLLLoss2d(weight)
+        self.loss = torch.nn.NLLLoss(weight) # changed to Loss, from Loss2d
 
     def forward(self, outputs, targets):
         return self.loss(torch.nn.functional.log_softmax(outputs, dim=1), targets)
@@ -115,12 +110,12 @@ def train(args, model):
     savedir = f'../save/{args.savedir}'
     os.makedirs(savedir, exist_ok=True)
 
-    log_path = os.path.join(savedir, "automated_log.txt")
+    automated_log_path = os.path.join(savedir, "automated_log.txt")
     model_txt_path = os.path.join(savedir, "model.txt")
 
 
     if (not os.path.exists(log_path)):  
-        with open(log_path, "a") as myfile:
+        with open(automated_log_path, "a") as myfile:
             myfile.write("Epoch\t\tTrain-loss\t\tTest-loss\t\tTrain-IoU\t\tTest-IoU\t\tlearningRate")
 
     with open(model_txt_path, "w") as myfile:
@@ -151,14 +146,12 @@ def train(args, model):
         best_acc = checkpoint['best_acc']
         print(f"=> Loaded checkpoint at epoch {checkpoint['epoch']}")
 
-
-    if args.visualize and args.steps_plot > 0:
-        board = Dashboard(args.port)
+    model.train() # added
 
 
-    ###222
-    print(f"Train dataset size: {len(dataset_train)}")
-    print(f"Validation dataset size: {len(dataset_val)}")
+    # if args.visualize and args.steps_plot > 0:
+    #     board = Dashboard(args.port)
+
 
     for epoch in range(start_epoch, args.num_epochs+1):
         print(f"----- TRAINING - EPOCH {epoch} -----")
@@ -178,11 +171,7 @@ def train(args, model):
 
         
         for step, (images, labels) in enumerate(loader):
-            # 33333
-            print(f"Processing batch {step+1}")
-            if step>2:
-                break 
-
+            
             start_time = time.time()
             #print (labels.size())
             #print (np.unique(labels.numpy()))
@@ -305,7 +294,7 @@ def train(args, model):
         #scheduler.step(average_epoch_loss_val, epoch)  ## scheduler 1   # update lr if needed
         iouVal = iouEvalVal.getIoU()[0] if args.iouVal else 0
 
-        print(f"EPOCH IoU on VAL set: {iouVal:.4f}%")
+        print(f"EPOCH IoU on VAL set: {iouVal:.2f}%")
  
 
         # ----------------- remember best valIoU and save checkpoint -------------------
