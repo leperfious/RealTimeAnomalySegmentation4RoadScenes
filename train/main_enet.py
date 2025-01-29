@@ -195,7 +195,7 @@ def train(args, model):
             inputs = Variable(images)
             targets = Variable(labels)
             # outputs = model(inputs, only_encode=enc) # for ERFNet encoder, decoder
-            output = model(inputs)
+            outputs = model(inputs)
 
             #print("targets", np.unique(targets[:, 0].cpu().data.numpy()))
 
