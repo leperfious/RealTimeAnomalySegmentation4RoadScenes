@@ -461,7 +461,7 @@ if __name__ == '__main__':
     parser.add_argument('--state')
 
     parser.add_argument('--port', type=int, default=8097)
-    parser.add_argument('--datadir', default=os.getenv("/content/datasets/cityscapes/"))
+    parser.add_argument('--datadir', default=("/content/datasets/cityscapes/"))
     parser.add_argument('--height', type=int, default=512)
     parser.add_argument('--num-epochs', type=int, default=1)
     parser.add_argument('--num-workers', type=int, default=4)
