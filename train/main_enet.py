@@ -42,8 +42,7 @@ ENet_weights = torch.tensor([
 
 #Augmentations - different function implemented to perform random augments on both image and target --- OK
 class MyCoTransform(object):
-    def __init__(self, enc, augment=True, height=512):
-        self.enc=enc
+    def __init__(self, augment=True, height=512):
         self.augment = augment
         self.height = height
         pass
@@ -89,7 +88,7 @@ class CrossEntropyLoss2d(torch.nn.Module):
         return self.loss(torch.nn.functional.log_softmax(outputs, dim=1), targets)
 
 
-def train(args, model, enc=False):
+def train(args, model):
     best_acc = 0
 
     #TODO: calculate weights by processing dataset histogram (now its being set by hand from the torch values)
@@ -97,8 +96,8 @@ def train(args, model, enc=False):
 
     assert os.path.exists(args.datadir), "Error: datadir (dataset directory) could not be loaded"
 
-    co_transform = MyCoTransform(enc, augment=True, height=args.height)#1024)
-    co_transform_val = MyCoTransform(enc, augment=False, height=args.height)#1024)
+    co_transform = MyCoTransform(augment=True, height=args.height)#1024)
+    co_transform_val = MyCoTransform(augment=False, height=args.height)#1024)
 
     dataset_train = cityscapes(args.datadir, co_transform, 'train')
     dataset_val = cityscapes(args.datadir, co_transform_val, 'val')
@@ -156,6 +155,11 @@ def train(args, model, enc=False):
     if args.visualize and args.steps_plot > 0:
         board = Dashboard(args.port)
 
+
+    ###222
+    print(f"Train dataset size: {len(dataset_train)}")
+    print(f"Validation dataset size: {len(dataset_val)}")
+
     for epoch in range(start_epoch, args.num_epochs+1):
         print(f"----- TRAINING - EPOCH {epoch} -----")
 
@@ -174,6 +178,10 @@ def train(args, model, enc=False):
 
         
         for step, (images, labels) in enumerate(loader):
+            # 33333
+            print(f"Processing batch {step+1}")
+            if step>2:
+                break 
 
             start_time = time.time()
             #print (labels.size())
@@ -307,8 +315,9 @@ def train(args, model, enc=False):
         is_best = current_acc > best_acc
         best_acc = max(current_acc, best_acc)
         
-        filenameCheckpoint = f"{savedir}/checkpoint_enc.pth.tar" if enc else f"{savedir}/checkpoint.pth.tar"
-        filenameBest = f"{savedir}/model_best_enc.pth.tar" if enc else f"{savedir}/model_best.pth.tar"
+        filenameCheckpoint = f"{savedir}/checkpoint.pth.tar"
+        filenameBest = f"{savedir}/model_best.pth.tar"
+
 
         save_checkpoint({
             'epoch': epoch + 1,
@@ -322,19 +331,21 @@ def train(args, model, enc=False):
         # ------------------ SAVE MODEL AFTER EPOCH  ------------------------
 
 
-        filename = f"{savedir}/model_encoder-{epoch:03}.pth" if enc else f"{savedir}/model-{epoch:03}.pth"
-        filename_best = f"{savedir}/model_encoder_best.pth" if enc else f"{savedir}/model_best.pth"
+        filename = f"{savedir}/model-{epoch:03}.pth"
+        filename_best = f"{savedir}/model_best.pth"
 
         if args.epochs_save > 0 and step > 0 and step % args.epochs_save == 0:
             torch.save(model.state_dict(), filename)
             print(f"Model saved: {filename} (Epoch: {epoch})")
 
+
         if is_best:
             torch.save(model.state_dict(), filename_best)
             print(f"Best model saved: {filename_best} (Epoch: {epoch})")
-            best_log_file = f"{savedir}/best_encoder.txt" if enc else f"{savedir}/best.txt"
+
+            best_log_file = f"{savedir}/best.txt"
             with open(best_log_file, "w") as myfile:
-                myfile.write(f"Best epoch: {epoch}, with Val-IoU: {iouVal:.4f}")           
+                myfile.write(f"Best epoch: {epoch}, with Val-IoU: {iouVal:.4f}")  
 
 
         
