@@ -34,6 +34,9 @@ ENet_weights = torch.tensor([
     4.363572, 7.188593, 5.087264, 9.437396, 9.276026, 9.045236, 9.804637, 9.516575, 5.662319, 9.088848,
     7.784346, 9.05168, 9.871636, 6.975896, 9.752323, 9.780681, 9.782797, 9.905354, 9.628174, 10.0
 ])
+max_weight = 5.0
+ENet_weights = ENet_weights / ENet_weights.max() * max_weight  # making weights lower
+
 
 #Augmentations - different function implemented to perform random augments on both image and target --- OK
 class MyCoTransform(object):
@@ -155,6 +158,8 @@ def train(args, model):
 
     for epoch in range(start_epoch, args.num_epochs+1):
         print(f"----- TRAINING - EPOCH {epoch} -----")
+
+        begin_epoch = time.time()
 
         scheduler.step(epoch)    ## scheduler 2
 
@@ -294,7 +299,7 @@ def train(args, model):
         #scheduler.step(average_epoch_loss_val, epoch)  ## scheduler 1   # update lr if needed
         iouVal = iouEvalVal.getIoU()[0] if args.iouVal else 0
 
-        print(f"EPOCH IoU on VAL set: {iouVal:.2f}%")
+        print(f"EPOCH IoU on VAL set: {iouVal:.4f}%")
  
 
         # ----------------- remember best valIoU and save checkpoint -------------------
@@ -464,7 +469,7 @@ if __name__ == '__main__':
     parser.add_argument('--port', type=int, default=8097)
     parser.add_argument('--datadir', default=os.getenv("CITYSCAPES_DATASET", "/content/datasets/cityscapes/"))  
     parser.add_argument('--height', type=int, default=512)
-    parser.add_argument('--num-epochs', type=int, default=20)
+    parser.add_argument('--num-epochs', type=int, default=30)
     parser.add_argument('--num-workers', type=int, default=4)
     parser.add_argument('--batch-size', type=int, default=6)
     parser.add_argument('--steps-loss', type=int, default=50)
