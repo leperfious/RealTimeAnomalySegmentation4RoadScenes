@@ -441,7 +441,7 @@ def main(args):
     f.close()
     """
 
-    # #train(args, model)
+    train(args, model)
     # if (not args.decoder):
     #     print("========== ENCODER TRAINING ===========")
     #     model = train(args, model, True) #Train encoder
