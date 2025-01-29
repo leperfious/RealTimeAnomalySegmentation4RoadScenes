@@ -17,7 +17,7 @@ from torch.optim import SGD, Adam, lr_scheduler
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, CenterCrop, Normalize, Resize, Pad
-from torchvision.transforms import ToTensor, ToPILImage, transform
+from torchvision.transforms import ToTensor, ToPILImage
 
 from dataset import VOC12,cityscapes
 from transform import Relabel, ToLabel, Colorize
