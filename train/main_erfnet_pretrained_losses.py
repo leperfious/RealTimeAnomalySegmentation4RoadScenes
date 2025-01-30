@@ -174,6 +174,7 @@ if __name__ == "__main__":
     parser.add_argument('--num-epochs', type=int, default=20)  # Change if needed
     parser.add_argument('--num-workers', type=int, default=4)
     parser.add_argument('--batch-size', type=int, default=6)
+    parser.add_argument('--savedir', type=str, required=True, help="Directory to save the model checkpoints")
 
     args = parser.parse_args()
     main(args)
