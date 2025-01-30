@@ -112,7 +112,7 @@ def train(args, model, loss_fn, loss_name):
             10.289801597595, 10.405355453491, 10.138095855713, 0  # 19th class ignored
             ])
 
-        iou_eval = iouEval(NUM_CLASSES, weights=class_weights)
+        iou_eval = iouEval(NUM_CLASSES)
 
         for images, targets in loader_train:
             images, targets = images.to(device), targets.to(device)
