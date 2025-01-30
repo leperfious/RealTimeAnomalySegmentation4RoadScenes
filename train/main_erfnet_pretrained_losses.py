@@ -48,18 +48,18 @@ class IsotropicMaxLoss(nn.Module):
         ce_loss = F.cross_entropy(outputs, targets)
         return ce_loss + iso_loss
 
-def get_loss_function(loss_type):
-    """Return the loss function based on given type"""
-    if loss_type == "LN+CE":
-        return LogitNormLoss()
-    elif loss_type == "LN+FL":
-        return nn.Sequential(LogitNormLoss(), FocalLoss())
-    elif loss_type == "Isomax+CE":
-        return IsotropicMaxLoss()
-    elif loss_type == "Isomax+FL":
-        return nn.Sequential(IsotropicMaxLoss(), FocalLoss())
+def get_loss_function(loss_name):
+    """Return the correct loss function"""
+    if loss_name == "LN+CE":
+        return lambda outputs, targets: LogitNormLoss()(outputs, targets)
+    elif loss_name == "LN+FL":
+        return lambda outputs, targets: LogitNormLoss()(outputs, targets) + FocalLoss()(outputs, targets)
+    elif loss_name == "Isomax+CE":
+        return lambda outputs, targets: IsotropicMaxLoss()(outputs, targets)
+    elif loss_name == "Isomax+FL":
+        return lambda outputs, targets: IsotropicMaxLoss()(outputs, targets) + FocalLoss()(outputs, targets)
     else:
-        raise ValueError("Invalid loss function type!")
+        raise ValueError(f"Invalid loss function type: {loss_name}")
 
 # Data Transformations
 class MyCoTransform:
@@ -146,17 +146,21 @@ def train(args, model, loss_fn, loss_name):
         torch.save(model.state_dict(), f"{save_dir}/model_epoch_{epoch}.pth")
 
 def load_pretrained_model(model, pretrained_path):
+    """Load pretrained weights into the model"""
+    print(f"Loading Pretrained Model from: {pretrained_path}")
+    
+    checkpoint = torch.load(pretrained_path, map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
+
+    # Ensure we correctly handle cases where the checkpoint has or doesn't have 'state_dict'
     state_dict = checkpoint['state_dict'] if 'state_dict' in checkpoint else checkpoint
 
     # Remove "module." prefix if necessary
-    state_dict = checkpoint['state_dict']
-    new_state_dict = {}
-    
-    for key, value in state_dict.items():
-        new_key = key.replace("module.", "")  # 
-        new_state_dict[new_key] = value
-    
-    model.load_state_dict(new_state_dict, strict=False)  #
+    new_state_dict = {key.replace("module.", ""): value for key, value in state_dict.items()}
+
+    model.load_state_dict(new_state_dict, strict=False)
+
+    print("Pretrained model loaded successfully!")
+    return model
 
 def main(args):
     """Main Training Function"""
@@ -169,10 +173,7 @@ def main(args):
     if args.state:
         pretrained_path = args.state  
     else:
-        pretrained_path = "trained_models/erfnet_pretrained.pth"  # Default fallback
-
-    if not os.path.exists(pretrained_path):
-        raise FileNotFoundError(f"Pretrained model file not found: {pretrained_path}")
+        raise FileNotFoundError("Pretrained model path is required!")
 
     model = load_pretrained_model(model, pretrained_path)
 
@@ -193,8 +194,6 @@ if __name__ == "__main__":
     parser.add_argument('--num-workers', type=int, default=4)
     parser.add_argument('--batch-size', type=int, default=6)
     parser.add_argument('--savedir', type=str, required=True, help="Directory to save the model checkpoints")
-    parser.add_argument('--loss1', type=str, required=True, choices=['logit_norm', 'isomax'], help="First loss function")
-    parser.add_argument('--loss2', type=str, required=True, choices=['cross_entropy', 'focal_loss'], help="Second loss function")
     parser.add_argument('--state', type=str, required=True, help="Path to the pretrained model")
 
     args = parser.parse_args()
