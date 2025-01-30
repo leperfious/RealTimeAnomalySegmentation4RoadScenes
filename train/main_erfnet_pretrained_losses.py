@@ -175,6 +175,9 @@ if __name__ == "__main__":
     parser.add_argument('--num-workers', type=int, default=4)
     parser.add_argument('--batch-size', type=int, default=6)
     parser.add_argument('--savedir', type=str, required=True, help="Directory to save the model checkpoints")
+    parser.add_argument('--loss1', type=str, required=True, choices=['logit_norm', 'isomax'], help="First loss function")
+    parser.add_argument('--loss2', type=str, required=True, choices=['cross_entropy', 'focal_loss'], help="Second loss function")
+    parser.add_argument('--state', type=str, required=True, help="Path to the pretrained model")
 
     args = parser.parse_args()
     main(args)
