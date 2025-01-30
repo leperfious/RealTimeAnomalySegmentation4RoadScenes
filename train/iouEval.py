@@ -18,31 +18,30 @@ class iouEval:
         self.fn = torch.zeros(classes).double()
 
     def addBatch(self, x, y):
-        """Compute IoU ensuring tensor shapes match."""
+        """Compute IoU by adding a batch of predictions and targets."""
+
+        # Check if CUDA is used
         if x.is_cuda or y.is_cuda:
-            x = x.cuda()
-            y = y.cuda()
+           x = x.cuda()
+           y = y.cuda()
 
-        num_classes = self.nClasses
+        print(f"DEBUG: x.shape (before one-hot) = {x.shape}, y.shape (before one-hot) = {y.shape}")
 
-        # ✅ **Ensure `x` is one-hot encoded correctly**
-        x = x.max(1)[1]  # Get predicted class indices
-        x_onehot = torch.nn.functional.one_hot(x, num_classes=num_classes).permute(0, 3, 1, 2).float()
+        # Ensure `x` and `y` are one-hot encoded
+        x_onehot = torch.nn.functional.one_hot(x.long(), num_classes=self.nClasses).permute(0, 3, 1, 2).float()
+        y_onehot = torch.nn.functional.one_hot(y.long(), num_classes=self.nClasses).permute(0, 3, 1, 2).float()
 
-        # ✅ **Ensure `y` is formatted correctly**
-        y = y.squeeze(1)  # Ensure it's (B, H, W)
-        y_onehot = torch.nn.functional.one_hot(y.long(), num_classes=num_classes).permute(0, 3, 1, 2).float()
+        print(f"DEBUG: x_onehot.shape = {x_onehot.shape}, y_onehot.shape = {y_onehot.shape}")
 
-        # ✅ **Ensure shapes match after one-hot encoding**
-        assert x_onehot.shape == y_onehot.shape, f"x_onehot {x_onehot.shape} vs y_onehot {y_onehot.shape}"
+        # Check for ignore index
+        if self.ignoreIndex != -1:
+            ignores = y.squeeze(1) == self.ignoreIndex  # Shape: (B, H, W)
+            ignores = ignores.unsqueeze(1).expand(-1, self.nClasses, -1, -1)  # Shape: (B, C, H, W)
+            x_onehot[ignores] = 0  # Set ignored pixels to 0
 
-        # ✅ **Fix Ignore Index Handling**
-        if self.ignoreIndex != -1 and self.ignoreIndex < num_classes:
-            ignore_mask = (y == self.ignoreIndex).unsqueeze(1).expand_as(y_onehot)
-            x_onehot[ignore_mask] = 0  # Remove ignored pixels
-            y_onehot[ignore_mask] = 0
+        print(f"DEBUG: After ignoreIndex handling, x_onehot.shape = {x_onehot.shape}")
 
-        # ✅ **Compute True Positives (TP), False Positives (FP), False Negatives (FN)**
+        # Compute TP, FP, FN
         tpmult = x_onehot * y_onehot
         tp = torch.sum(tpmult, dim=(0, 2, 3))
 
@@ -52,7 +51,9 @@ class iouEval:
         fnmult = (1 - x_onehot) * y_onehot
         fn = torch.sum(fnmult, dim=(0, 2, 3))
 
-        # ✅ **Store results**
+        print(f"DEBUG: tp.shape = {tp.shape}, fp.shape = {fp.shape}, fn.shape = {fn.shape}")
+
+        # Store results
         self.tp += tp.double().cpu()
         self.fp += fp.double().cpu()
         self.fn += fn.double().cpu()
