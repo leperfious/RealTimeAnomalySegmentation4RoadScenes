@@ -23,31 +23,31 @@ class iouEval:
 
         num_classes = self.nClasses
 
-        # ✅ Ensure `x` and `y` are LONG tensors
+        # ✅ Convert x and y to LONG format
         x = x.long()
         y = y.long()
 
-        # ✅ Expand `y` to 4D if necessary
+        # ✅ Expand y to match batch shape if necessary
         if y.dim() == 3:
             y = y.unsqueeze(1)  # Convert to (B, 1, H, W)
         if x.dim() == 3:
             x = x.unsqueeze(1)  # Convert to (B, 1, H, W)
 
-        # ✅ Ensure `x` and `y` have the same spatial dimensions
+        # ✅ Ensure spatial dimensions match
         assert x.shape[-2:] == y.shape[-2:], f"Shape mismatch: x {x.shape[-2:]} vs y {y.shape[-2:]}"
 
-        # ✅ Convert to one-hot
+        # ✅ Convert to one-hot correctly
         x_onehot = torch.nn.functional.one_hot(x.squeeze(1), num_classes=num_classes).permute(0, 3, 1, 2).float()
         y_onehot = torch.nn.functional.one_hot(y.squeeze(1), num_classes=num_classes).permute(0, 3, 1, 2).float()
-
-        # ✅ Ensure tensors match after one-hot encoding
-        assert x_onehot.shape == y_onehot.shape, f"x_onehot {x_onehot.shape} vs y_onehot {y_onehot.shape}"
 
         # ✅ Fix ignoreIndex handling
         if self.ignoreIndex != -1 and self.ignoreIndex < num_classes:
             ignores = (y.squeeze(1) == self.ignoreIndex).unsqueeze(1).expand_as(y_onehot)  # Shape: (B, C, H, W)
             x_onehot[ignores] = 0  # Set ignored pixels to 0
             y_onehot[ignores] = 0
+
+        # ✅ Ensure tensors match after one-hot encoding
+        assert x_onehot.shape == y_onehot.shape, f"x_onehot {x_onehot.shape} vs y_onehot {y_onehot.shape}"
 
         # Compute TP, FP, FN
         tp = torch.sum(x_onehot * y_onehot, dim=(0, 2, 3))
@@ -65,7 +65,6 @@ class iouEval:
         den = self.tp + self.fp + self.fn + 1e-15
         iou = num / den
         return torch.mean(iou), iou  # Returns mean IoU and per-class IoU
-
 
 # Class for colors
 class colors:
