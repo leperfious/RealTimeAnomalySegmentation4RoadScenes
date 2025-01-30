@@ -146,10 +146,17 @@ def train(args, model, loss_fn, loss_name):
         torch.save(model.state_dict(), f"{save_dir}/model_epoch_{epoch}.pth")
 
 def load_pretrained_model(model, pretrained_path):
-    """Load Pretrained Weights"""
     checkpoint = torch.load(pretrained_path)
-    model.load_state_dict(checkpoint)
-    return model
+
+    # Remove "module." prefix if necessary
+    state_dict = checkpoint['state_dict']
+    new_state_dict = {}
+    
+    for key, value in state_dict.items():
+        new_key = key.replace("module.", "")  # 
+        new_state_dict[new_key] = value
+    
+    model.load_state_dict(new_state_dict, strict=False)  #
 
 def main(args):
     """Main Training Function"""
