@@ -23,29 +23,29 @@ class iouEval:
 
         num_classes = self.nClasses
 
-        # ✅ Convert x and y to LONG format
+        # ✅ Ensure x and y are LONG tensors
         x = x.long()
         y = y.long()
 
-        # ✅ Expand y to match batch shape if necessary
+        # ✅ Expand tensors to match batch dimensions
         if y.dim() == 3:
-            y = y.unsqueeze(1)  # Convert to (B, 1, H, W)
+            y = y.unsqueeze(1)  # Convert (B, H, W) -> (B, 1, H, W)
         if x.dim() == 3:
-            x = x.unsqueeze(1)  # Convert to (B, 1, H, W)
+            x = x.unsqueeze(1)  # Convert (B, H, W) -> (B, 1, H, W)
 
         # ✅ Ensure spatial dimensions match
         assert x.shape[-2:] == y.shape[-2:], f"Shape mismatch: x {x.shape[-2:]} vs y {y.shape[-2:]}"
 
-        # ✅ Convert to one-hot correctly
+        # ✅ One-hot encode
         x_onehot = torch.nn.functional.one_hot(x.squeeze(1), num_classes=num_classes).permute(0, 3, 1, 2).float()
         y_onehot = torch.nn.functional.one_hot(y.squeeze(1), num_classes=num_classes).permute(0, 3, 1, 2).float()
 
         # ✅ Fix ignoreIndex handling
         if self.ignoreIndex != -1 and self.ignoreIndex < num_classes:
-            mask = (y.squeeze(1) == self.ignoreIndex).unsqueeze(1)  # Shape: (B, 1, H, W)
-            mask = mask.expand_as(y_onehot)  # Expand to (B, C, H, W)
-            y_onehot[mask] = 0  # Ignore ground truth labels
-            x_onehot[mask] = 0  # Ignore predictions
+            ignore_mask = y.squeeze(1) == self.ignoreIndex  # Shape: (B, H, W)
+            ignore_mask = ignore_mask.unsqueeze(1).expand(-1, num_classes, -1, -1)  # Shape: (B, C, H, W)
+            x_onehot[ignore_mask] = 0  # Ignore predictions
+            y_onehot[ignore_mask] = 0  # Ignore ground truth
 
         # ✅ Ensure tensors match after one-hot encoding
         assert x_onehot.shape == y_onehot.shape, f"x_onehot {x_onehot.shape} vs y_onehot {y_onehot.shape}"
