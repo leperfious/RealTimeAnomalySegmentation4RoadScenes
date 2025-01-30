@@ -3,89 +3,79 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-from torch.autograd import Variable
 from torch.utils.data import DataLoader
 import importlib
 from argparse import ArgumentParser
+from torchvision.transforms import Compose, Resize, ToTensor
+from PIL import Image  
+
 from dataset import cityscapes
 from transform import Relabel, ToLabel
-from torchvision.transforms import Compose, Resize, ToTensor
 from iouEval import iouEval
-from PIL import Image
 
 # Number of classes in Cityscapes
 NUM_CLASSES = 20
 
-# Define Loss Functions
+
+CLASS_WEIGHTS = torch.tensor([
+    2.8149, 6.9850, 3.7890, 9.9428, 9.7702,
+    9.5111, 10.3113, 10.0265, 4.6323, 9.5608,
+    7.8698, 9.5169, 10.3737, 6.6616, 10.2605,
+    10.2879, 10.2898, 10.4053, 10.1381, 0
+], dtype=torch.float32).cuda()
+
 class LogitNormLoss(nn.Module):
-    """Logit Normalization Loss"""
-    def __init__(self):
-        super(LogitNormLoss, self).__init__()
-    
     def forward(self, outputs, targets):
         normed_logits = outputs / torch.norm(outputs, p=2, dim=1, keepdim=True)
-        return F.cross_entropy(normed_logits, targets)
+        return F.cross_entropy(normed_logits, targets, weight=CLASS_WEIGHTS)
 
 class FocalLoss(nn.Module):
-    """Focal Loss"""
-    def __init__(self, gamma=2.0, weight=None):
+    def __init__(self, gamma=2.0):
         super(FocalLoss, self).__init__()
         self.gamma = gamma
-        self.ce = nn.CrossEntropyLoss(weight=weight)
+        self.ce = nn.CrossEntropyLoss(weight=CLASS_WEIGHTS)
     
     def forward(self, outputs, targets):
         ce_loss = self.ce(outputs, targets)
         pt = torch.exp(-ce_loss)
-        focal_loss = ((1 - pt) ** self.gamma) * ce_loss
-        return focal_loss.mean()
+        return ((1 - pt) ** self.gamma * ce_loss).mean()
 
 class IsotropicMaxLoss(nn.Module):
-    """Isotropic Maximization Loss"""
-    def __init__(self):
-        super(IsotropicMaxLoss, self).__init__()
-    
     def forward(self, outputs, targets):
         iso_loss = torch.mean(torch.sum(outputs ** 2, dim=1))
-        ce_loss = F.cross_entropy(outputs, targets)
+        ce_loss = F.cross_entropy(outputs, targets, weight=CLASS_WEIGHTS)
         return ce_loss + iso_loss
 
-def get_loss_function(loss1, loss2):
-    """Return the correct loss function based on user arguments"""
-    loss_functions = {
-        "logit_norm": LogitNormLoss(),
-        "isomax": IsotropicMaxLoss(),
-        "cross_entropy": nn.CrossEntropyLoss(),
-        "focal_loss": FocalLoss(),
-    }
+def get_loss_function(loss_type):
+    if loss_type == "LN+CE":
+        return LogitNormLoss()
+    elif loss_type == "LN+FL":
+        return nn.ModuleList([LogitNormLoss(), FocalLoss()])
+    elif loss_type == "Isomax+CE":
+        return IsotropicMaxLoss()
+    elif loss_type == "Isomax+FL":
+        return nn.ModuleList([IsotropicMaxLoss(), FocalLoss()])
+    else:
+        raise ValueError(f"Invalid loss type: {loss_type}")
 
-    if loss1 not in loss_functions or loss2 not in loss_functions:
-        raise ValueError(f"Invalid loss function names: {loss1}, {loss2}")
 
-    def combined_loss(outputs, targets):
-        return loss_functions[loss1](outputs, targets) + loss_functions[loss2](outputs, targets)
-
-    return combined_loss
-
-# Data Transformations
 class MyCoTransform:
     def __init__(self, height=512):
         self.height = height
     
     def __call__(self, input, target):
         input = Resize((self.height, self.height), interpolation=Image.BILINEAR)(input)
-        target = Resize((self.height, self.height), interpolation=Image.NEAREST)(target)  # FIX: NEAREST interpolation
+        target = Resize((self.height, self.height), interpolation=Image.NEAREST)(target)
         input = ToTensor()(input)
         target = ToLabel()(target)
-        target = Relabel(255, 19)(target)  # FIX: Ensure label mapping is correct
+        target = Relabel(255, 19)(target)
         return input, target
 
 def train(args, model, loss_fn, loss_name):
-    """Training Loop"""
     best_acc = 0
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model.to(device)
 
-    # Load dataset
     co_transform = MyCoTransform(height=args.height)
     dataset_train = cityscapes(args.datadir, co_transform, 'train')
     dataset_val = cityscapes(args.datadir, co_transform, 'val')
@@ -101,17 +91,8 @@ def train(args, model, loss_fn, loss_name):
 
     for epoch in range(1, args.num_epochs + 1):
         print(f"Epoch {epoch}/{args.num_epochs} - Training with {loss_name}")
-
         model.train()
         epoch_loss = 0.0
-        class_weights = torch.tensor([
-            2.8149201869965, 6.9850029945374, 3.7890393733978, 9.9428062438965,
-            9.7702074050903, 9.5110931396484, 10.311357498169, 10.026463508606,
-            4.6323022842407, 9.5608062744141, 7.8698215484619, 9.5168733596802,
-            10.373730659485, 6.6616044044495, 10.260489463806, 10.287888526917,
-            10.289801597595, 10.405355453491, 10.138095855713, 0  # 19th class ignored
-            ])
-
         iou_eval = iouEval(NUM_CLASSES)
 
         for images, targets in loader_train:
@@ -119,18 +100,23 @@ def train(args, model, loss_fn, loss_name):
 
             optimizer.zero_grad()
             outputs = model(images)
-            loss = loss_fn(outputs, targets[:, 0])
+
+            if isinstance(loss_fn, nn.ModuleList):  # Handle combined losses
+                loss = sum(l(outputs, targets[:, 0]) for l in loss_fn)
+            else:
+                loss = loss_fn(outputs, targets[:, 0])
+
             loss.backward()
             optimizer.step()
             
             epoch_loss += loss.item()
-            iou_eval.addBatch(outputs.max(1)[1], targets)
+            iou_eval.addBatch(outputs.max(1)[1].unsqueeze(1), targets.unsqueeze(1))
 
         avg_loss = epoch_loss / len(loader_train)
         train_iou = iou_eval.getIoU()[0] * 100
         print(f"Train Loss: {avg_loss:.4f} | Train IoU: {train_iou:.2f}%")
 
-        # Validation
+        # ✅ Validation
         model.eval()
         val_loss = 0.0
         iou_eval_val = iouEval(NUM_CLASSES)
@@ -139,59 +125,42 @@ def train(args, model, loss_fn, loss_name):
             for images, targets in loader_val:
                 images, targets = images.to(device), targets.to(device)
                 outputs = model(images)
-                loss = loss_fn(outputs, targets[:, 0])
+
+                if isinstance(loss_fn, nn.ModuleList):
+                    loss = sum(l(outputs, targets[:, 0]) for l in loss_fn)
+                else:
+                    loss = loss_fn(outputs, targets[:, 0])
+
                 val_loss += loss.item()
-                iou_eval_val.addBatch(outputs.max(1)[1], targets)
+                iou_eval_val.addBatch(outputs.max(1)[1].unsqueeze(1), targets.unsqueeze(1))
 
         avg_val_loss = val_loss / len(loader_val)
         val_iou = iou_eval_val.getIoU()[0] * 100
         print(f"Val Loss: {avg_val_loss:.4f} | Val IoU: {val_iou:.2f}%")
 
         scheduler.step()
-
-        # Save best model
         if val_iou > best_acc:
             best_acc = val_iou
             torch.save(model.state_dict(), f"{save_dir}/best_model.pth")
             print(f"New best model saved at {save_dir}/best_model.pth")
 
-        # Save every epoch
         torch.save(model.state_dict(), f"{save_dir}/model_epoch_{epoch}.pth")
 
+
 def load_pretrained_model(model, pretrained_path):
-    """Load pretrained weights into the model"""
-    print(f"Loading Pretrained Model from: {pretrained_path}")
-    
     checkpoint = torch.load(pretrained_path, map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
-
-    # Ensure we correctly handle cases where the checkpoint has or doesn't have 'state_dict'
-    state_dict = checkpoint['state_dict'] if 'state_dict' in checkpoint else checkpoint
-
-    # Remove "module." prefix if necessary
-    new_state_dict = {key.replace("module.", ""): value for key, value in state_dict.items()}
-
-    model.load_state_dict(new_state_dict, strict=False)
-
-    print("Pretrained model loaded successfully!")
-    return model
+    state_dict = checkpoint.get('state_dict', checkpoint)
+    model.load_state_dict({k.replace("module.", ""): v for k, v in state_dict.items()}, strict=False)
 
 def main(args):
-    """Main Training Function"""
     print("Loading Pretrained ERFNet Model...")
-
     model_file = importlib.import_module(args.model)
     model = model_file.Net(NUM_CLASSES)
+    load_pretrained_model(model, args.state)
 
-    if not os.path.exists(args.state):
-        raise FileNotFoundError(f"Pretrained model file not found: {args.state}")
-
-    model = load_pretrained_model(model, args.state)
-
-    loss_name = f"{args.loss1}_{args.loss2}"
-    loss_fn = get_loss_function(args.loss1, args.loss2)
-    
-    print(f"\n========== Training with {loss_name} ==========")
-    train(args, model, loss_fn, loss_name)
+    for loss_name in ["LN+CE", "LN+FL", "Isomax+CE", "Isomax+FL"]:
+        loss_fn = get_loss_function(loss_name)
+        train(args, model, loss_fn, loss_name)
 
 if __name__ == "__main__":
     parser = ArgumentParser()
