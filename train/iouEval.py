@@ -42,9 +42,10 @@ class iouEval:
 
         # ✅ Fix ignoreIndex handling
         if self.ignoreIndex != -1 and self.ignoreIndex < num_classes:
-            ignores = (y.squeeze(1) == self.ignoreIndex).unsqueeze(1).expand_as(y_onehot)  # Shape: (B, C, H, W)
-            x_onehot[ignores] = 0  # Set ignored pixels to 0
-            y_onehot[ignores] = 0
+            mask = (y.squeeze(1) == self.ignoreIndex).unsqueeze(1)  # Shape: (B, 1, H, W)
+            mask = mask.expand_as(y_onehot)  # Expand to (B, C, H, W)
+            y_onehot[mask] = 0  # Ignore ground truth labels
+            x_onehot[mask] = 0  # Ignore predictions
 
         # ✅ Ensure tensors match after one-hot encoding
         assert x_onehot.shape == y_onehot.shape, f"x_onehot {x_onehot.shape} vs y_onehot {y_onehot.shape}"
