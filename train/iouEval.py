@@ -41,12 +41,14 @@ class iouEval:
         # ✅ Ensure tensors match after one-hot encoding
         assert x_onehot.shape == y_onehot.shape, f"x_onehot {x_onehot.shape} vs y_onehot {y_onehot.shape}"
 
-        if self.ignoreIndex != -1:
-            ignores = y_onehot[:, self.ignoreIndex].unsqueeze(1)
-            x_onehot = x_onehot[:, :self.ignoreIndex]
-            y_onehot = y_onehot[:, :self.ignoreIndex]
+        # ✅ Handle ignoreIndex properly
+        if self.ignoreIndex != -1 and self.ignoreIndex < num_classes:
+            ignores = y_onehot[:, self.ignoreIndex, :, :].unsqueeze(1)  # Shape: (B, 1, H, W)
+            ignores = ignores.expand(-1, num_classes, -1, -1)  # Broadcast over all classes
+            x_onehot = x_onehot * (1 - ignores)  # Ignore regions are set to 0
+            y_onehot = y_onehot * (1 - ignores)
         else:
-            ignores = 0
+            ignores = torch.zeros_like(y_onehot)
 
         # Compute TP, FP, FN
         tp = torch.sum(x_onehot * y_onehot, dim=(0, 2, 3))
@@ -54,9 +56,9 @@ class iouEval:
         fn = torch.sum((1 - x_onehot) * y_onehot, dim=(0, 2, 3))
 
         # Apply class weighting
-        self.tp += (tp.double().cpu() * self.weights[: self.nClasses - 1])
-        self.fp += (fp.double().cpu() * self.weights[: self.nClasses - 1])
-        self.fn += (fn.double().cpu() * self.weights[: self.nClasses - 1])
+        self.tp += (tp.double().cpu() * self.weights[: self.nClasses])
+        self.fp += (fp.double().cpu() * self.weights[: self.nClasses])
+        self.fn += (fn.double().cpu() * self.weights[: self.nClasses])
 
     def getIoU(self):
         """Compute mean IoU and per-class IoU."""
