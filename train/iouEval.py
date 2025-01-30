@@ -10,10 +10,9 @@ class iouEval:
 
     def reset(self):
         """Reset TP, FP, FN counters."""
-        classes = self.nClasses if self.ignoreIndex == -1 else self.nClasses - 1
-        self.tp = torch.zeros(classes).double()
-        self.fp = torch.zeros(classes).double()
-        self.fn = torch.zeros(classes).double()
+        self.tp = torch.zeros(self.nClasses).double()
+        self.fp = torch.zeros(self.nClasses).double()
+        self.fn = torch.zeros(self.nClasses).double()
 
     def addBatch(self, x, y):
         """Compute IoU with class weights applied."""
@@ -42,8 +41,8 @@ class iouEval:
 
         # ✅ Fix ignoreIndex handling
         if self.ignoreIndex != -1 and self.ignoreIndex < num_classes:
-            ignore_mask = y.squeeze(1) == self.ignoreIndex  # Shape: (B, H, W)
-            ignore_mask = ignore_mask.unsqueeze(1).expand(-1, num_classes, -1, -1)  # Shape: (B, C, H, W)
+            ignore_mask = (y.squeeze(1) == self.ignoreIndex).unsqueeze(1)  # Shape: (B, 1, H, W)
+            ignore_mask = ignore_mask.expand(-1, num_classes, -1, -1)  # Expand to (B, C, H, W)
             x_onehot[ignore_mask] = 0  # Ignore predictions
             y_onehot[ignore_mask] = 0  # Ignore ground truth
 
@@ -56,9 +55,9 @@ class iouEval:
         fn = torch.sum((1 - x_onehot) * y_onehot, dim=(0, 2, 3))
 
         # Apply class weighting
-        self.tp += (tp.double().cpu() * self.weights[: self.nClasses])
-        self.fp += (fp.double().cpu() * self.weights[: self.nClasses])
-        self.fn += (fn.double().cpu() * self.weights[: self.nClasses])
+        self.tp += tp.double().cpu()
+        self.fp += fp.double().cpu()
+        self.fn += fn.double().cpu()
 
     def getIoU(self):
         """Compute mean IoU and per-class IoU."""
@@ -66,7 +65,6 @@ class iouEval:
         den = self.tp + self.fp + self.fn + 1e-15
         iou = num / den
         return torch.mean(iou), iou  # Returns mean IoU and per-class IoU
-
 # Class for colors
 class colors:
     RED       = '\033[31;1m'
