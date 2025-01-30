@@ -71,11 +71,11 @@ class MyCoTransform:
         self.height = height
     
     def __call__(self, input, target):
-        input = Resize((self.height, self.height))(input)
-        target = Resize((self.height, self.height), interpolation=0)(target)
+        input = Resize((self.height, self.height), interpolation=Image.BILINEAR)(input)
+        target = Resize((self.height, self.height), interpolation=Image.NEAREST)(target)  # FIX: NEAREST interpolation
         input = ToTensor()(input)
         target = ToLabel()(target)
-        target = Relabel(255, 19)(target)
+        target = Relabel(255, 19)(target)  # FIX: Ensure label mapping is correct
         return input, target
 
 def train(args, model, loss_fn, loss_name):
