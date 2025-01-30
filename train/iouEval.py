@@ -24,9 +24,15 @@ class iouEval:
 
         num_classes = self.nClasses
 
+        x = x.long()
+        y = y.long()
+
+        if x.shape != y.shape:
+            raise ValueError(f"Shape mismatch: x has shape {x.shape}, y has shape {y.shape}")
+
         # Ensure `x` and `y` are one-hot encoded
-        x_onehot = torch.nn.functional.one_hot(x.long(), num_classes=num_classes).permute(0, 3, 1, 2).float()
-        y_onehot = torch.nn.functional.one_hot(y.long(), num_classes=num_classes).permute(0, 3, 1, 2).float()
+        x_onehot = torch.nn.functional.one_hot(x, num_classes=num_classes).permute(0, 3, 1, 2).float()
+        y_onehot = torch.nn.functional.one_hot(y, num_classes=num_classes).permute(0, 3, 1, 2).float()
 
         if self.ignoreIndex != -1:
             ignores = y_onehot[:, self.ignoreIndex].unsqueeze(1)
@@ -34,6 +40,9 @@ class iouEval:
             y_onehot = y_onehot[:, :self.ignoreIndex]
         else:
             ignores = 0
+
+        assert x_onehot.shape == y_onehot.shape, f"x_onehot {x_onehot.shape} vs y_onehot {y_onehot.shape}"
+
 
         # Compute TP, FP, FN
         tp = torch.sum(x_onehot * y_onehot, dim=(0, 2, 3))
