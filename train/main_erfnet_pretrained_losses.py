@@ -104,7 +104,15 @@ def train(args, model, loss_fn, loss_name):
 
         model.train()
         epoch_loss = 0.0
-        iou_eval = iouEval(NUM_CLASSES)
+        class_weights = torch.tensor([
+            2.8149201869965, 6.9850029945374, 3.7890393733978, 9.9428062438965,
+            9.7702074050903, 9.5110931396484, 10.311357498169, 10.026463508606,
+            4.6323022842407, 9.5608062744141, 7.8698215484619, 9.5168733596802,
+            10.373730659485, 6.6616044044495, 10.260489463806, 10.287888526917,
+            10.289801597595, 10.405355453491, 10.138095855713, 0  # 19th class ignored
+            ])
+
+        iou_eval = iouEval(NUM_CLASSES, class_weights=class_weights)
 
         for images, targets in loader_train:
             images, targets = images.to(device), targets.to(device)
