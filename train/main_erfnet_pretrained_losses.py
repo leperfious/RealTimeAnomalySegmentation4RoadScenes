@@ -154,9 +154,20 @@ def load_pretrained_model(model, pretrained_path):
 def main(args):
     """Main Training Function"""
     print("Loading Pretrained ERFNet Model...")
+
     model_file = importlib.import_module(args.model)
     model = model_file.Net(NUM_CLASSES)
-    model = load_pretrained_model(model, "trained_models/erfnet_pretrained.pth")
+
+    # Use the --state argument instead of hardcoded path
+    if args.state:
+        pretrained_path = args.state  
+    else:
+        pretrained_path = "trained_models/erfnet_pretrained.pth"  # Default fallback
+
+    if not os.path.exists(pretrained_path):
+        raise FileNotFoundError(f"Pretrained model file not found: {pretrained_path}")
+
+    model = load_pretrained_model(model, pretrained_path)
 
     loss_combinations = ["LN+CE", "LN+FL", "Isomax+CE", "Isomax+FL"]
     
