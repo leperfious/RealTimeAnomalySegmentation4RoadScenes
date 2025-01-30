@@ -146,7 +146,7 @@ def train(args, model, loss_fn, loss_name):
         torch.save(model.state_dict(), f"{save_dir}/model_epoch_{epoch}.pth")
 
 def load_pretrained_model(model, pretrained_path):
-    checkpoint = torch.load(pretrained_path)
+    state_dict = checkpoint['state_dict'] if 'state_dict' in checkpoint else checkpoint
 
     # Remove "module." prefix if necessary
     state_dict = checkpoint['state_dict']
