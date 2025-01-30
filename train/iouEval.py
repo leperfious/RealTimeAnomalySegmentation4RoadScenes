@@ -74,10 +74,10 @@ class iouEval:
     #     iou = num / den
     #     return torch.mean(iou), iou     #returns "iou mean", "iou per class"
 
-    def __init__(self, nClasses, ignoreIndex=19, class_weights=None):
+    def __init__(self, nClasses, ignoreIndex=19, weights=None):
         self.nClasses = nClasses
         self.ignoreIndex = ignoreIndex if nClasses > ignoreIndex else -1  # Ignore label handling
-        self.class_weights = class_weights if class_weights is not None else torch.ones(nClasses).double()
+        self.weights = weights if weights is not None else torch.ones(nClasses).double()
         self.reset()
 
     def reset(self):
@@ -116,16 +116,15 @@ class iouEval:
         fn = torch.sum(fnmult, dim=(0, 2, 3))
 
         # Apply class weighting
-        self.tp += (tp.double().cpu() * self.class_weights[: self.nClasses - 1])
-        self.fp += (fp.double().cpu() * self.class_weights[: self.nClasses - 1])
-        self.fn += (fn.double().cpu() * self.class_weights[: self.nClasses - 1])
+        self.tp += (tp.double().cpu() * self.weights[: self.nClasses - 1])
+        self.fp += (fp.double().cpu() * self.weights[: self.nClasses - 1])
+        self.fn += (fn.double().cpu() * self.weights[: self.nClasses - 1])
 
     def getIoU(self):
         num = self.tp
         den = self.tp + self.fp + self.fn + 1e-15
         iou = num / den
         return torch.mean(iou), iou  # Returns mean IoU and per-class IoU
-
 # Class for colors
 class colors:
     RED       = '\033[31;1m'
