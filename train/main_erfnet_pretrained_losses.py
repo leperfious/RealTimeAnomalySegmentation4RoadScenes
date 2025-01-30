@@ -48,18 +48,22 @@ class IsotropicMaxLoss(nn.Module):
         ce_loss = F.cross_entropy(outputs, targets)
         return ce_loss + iso_loss
 
-def get_loss_function(loss_name):
-    """Return the correct loss function"""
-    if loss_name == "LN+CE":
-        return lambda outputs, targets: LogitNormLoss()(outputs, targets)
-    elif loss_name == "LN+FL":
-        return lambda outputs, targets: LogitNormLoss()(outputs, targets) + FocalLoss()(outputs, targets)
-    elif loss_name == "Isomax+CE":
-        return lambda outputs, targets: IsotropicMaxLoss()(outputs, targets)
-    elif loss_name == "Isomax+FL":
-        return lambda outputs, targets: IsotropicMaxLoss()(outputs, targets) + FocalLoss()(outputs, targets)
-    else:
-        raise ValueError(f"Invalid loss function type: {loss_name}")
+def get_loss_function(loss1, loss2):
+    """Return the correct loss function based on user arguments"""
+    loss_functions = {
+        "logit_norm": LogitNormLoss(),
+        "isomax": IsotropicMaxLoss(),
+        "cross_entropy": nn.CrossEntropyLoss(),
+        "focal_loss": FocalLoss(),
+    }
+
+    if loss1 not in loss_functions or loss2 not in loss_functions:
+        raise ValueError(f"Invalid loss function names: {loss1}, {loss2}")
+
+    def combined_loss(outputs, targets):
+        return loss_functions[loss1](outputs, targets) + loss_functions[loss2](outputs, targets)
+
+    return combined_loss
 
 # Data Transformations
 class MyCoTransform:
@@ -169,20 +173,16 @@ def main(args):
     model_file = importlib.import_module(args.model)
     model = model_file.Net(NUM_CLASSES)
 
-    # Use the --state argument instead of hardcoded path
-    if args.state:
-        pretrained_path = args.state  
-    else:
-        raise FileNotFoundError("Pretrained model path is required!")
+    if not os.path.exists(args.state):
+        raise FileNotFoundError(f"Pretrained model file not found: {args.state}")
 
-    model = load_pretrained_model(model, pretrained_path)
+    model = load_pretrained_model(model, args.state)
 
-    loss_combinations = ["LN+CE", "LN+FL", "Isomax+CE", "Isomax+FL"]
+    loss_name = f"{args.loss1}_{args.loss2}"
+    loss_fn = get_loss_function(args.loss1, args.loss2)
     
-    for loss_name in loss_combinations:
-        print(f"\n========== Training with {loss_name} ==========")
-        loss_fn = get_loss_function(loss_name)
-        train(args, model, loss_fn, loss_name)
+    print(f"\n========== Training with {loss_name} ==========")
+    train(args, model, loss_fn, loss_name)
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -190,11 +190,13 @@ if __name__ == "__main__":
     parser.add_argument('--model', default="erfnet")
     parser.add_argument('--datadir', default="/content/datasets/cityscapes/")
     parser.add_argument('--height', type=int, default=512)
-    parser.add_argument('--num-epochs', type=int, default=20)  # Change if needed
+    parser.add_argument('--num-epochs', type=int, default=20)
     parser.add_argument('--num-workers', type=int, default=4)
     parser.add_argument('--batch-size', type=int, default=6)
     parser.add_argument('--savedir', type=str, required=True, help="Directory to save the model checkpoints")
     parser.add_argument('--state', type=str, required=True, help="Path to the pretrained model")
+    parser.add_argument('--loss1', type=str, required=True, choices=['logit_norm', 'isomax'])
+    parser.add_argument('--loss2', type=str, required=True, choices=['cross_entropy', 'focal_loss'])
 
     args = parser.parse_args()
     main(args)
