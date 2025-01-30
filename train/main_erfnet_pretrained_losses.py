@@ -11,6 +11,7 @@ from dataset import cityscapes
 from transform import Relabel, ToLabel
 from torchvision.transforms import Compose, Resize, ToTensor
 from iouEval import iouEval
+from PIL import Image
 
 # Number of classes in Cityscapes
 NUM_CLASSES = 20
