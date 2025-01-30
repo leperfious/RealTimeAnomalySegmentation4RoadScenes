@@ -78,7 +78,7 @@ class CrossEntropyLoss2d(torch.nn.Module):
     def __init__(self, weight=None):
         super().__init__()
 
-        self.loss = torch.nn.NLLLoss(weight) # changed to Loss, from Loss2d
+        self.loss = torch.nn.CrossEntropyLoss(weight) # changed to Loss, from Loss2d
 
     def forward(self, outputs, targets):
         return self.loss(torch.nn.functional.log_softmax(outputs, dim=1), targets)
@@ -188,11 +188,14 @@ def train(args, model):
             targets = Variable(labels)
             # outputs = model(inputs, only_encode=enc) # for ERFNet encoder, decoder
             outputs = model(inputs)
+            #bisenet
+            if isinstance(outputs, tuple):
+                outputs = outputs[0]
 
             #print("targets", np.unique(targets[:, 0].cpu().data.numpy()))
 
             optimizer.zero_grad()
-            loss = criterion(outputs, targets[:, 0])
+            loss = criterion(outputs, targets.squeeze(1))
             loss.backward()
             optimizer.step()
 
@@ -263,8 +266,12 @@ def train(args, model):
                 targets = Variable(labels, volatile=True)
                 #outputs = model(inputs, only_encode=enc) 
                 outputs = model(inputs)
+
+                #bisenet
+                if isinstance(outputs, tuple):
+                    outputs = outputs[0]
                 
-                loss = criterion(outputs, targets[:, 0])
+                loss = criterion(outputs, targets.squeeze(1))
                 # epoch_loss_val.append(loss.data[0])
                 epoch_loss_val.append(loss.item())
                 time_val.append(time.time() - start_time)
