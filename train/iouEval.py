@@ -27,9 +27,11 @@ class iouEval:
         x = x.long()
         y = y.long()
 
-        # ✅ Ensure `y` has 4D shape (batch, 1, H, W)
+        # ✅ Expand `y` to 4D if necessary
         if y.dim() == 3:
-            y = y.unsqueeze(1)  # Expand to (B, 1, H, W)
+            y = y.unsqueeze(1)  # Convert to (B, 1, H, W)
+        if x.dim() == 3:
+            x = x.unsqueeze(1)  # Convert to (B, 1, H, W)
 
         # ✅ Ensure `x` and `y` have the same spatial dimensions
         assert x.shape[-2:] == y.shape[-2:], f"Shape mismatch: x {x.shape[-2:]} vs y {y.shape[-2:]}"
@@ -41,18 +43,15 @@ class iouEval:
         # ✅ Ensure tensors match after one-hot encoding
         assert x_onehot.shape == y_onehot.shape, f"x_onehot {x_onehot.shape} vs y_onehot {y_onehot.shape}"
 
-        # ✅ Handle ignoreIndex properly
+        # ✅ Fix ignoreIndex handling
         if self.ignoreIndex != -1 and self.ignoreIndex < num_classes:
-            ignores = y_onehot[:, self.ignoreIndex, :, :].unsqueeze(1)  # Shape: (B, 1, H, W)
-            ignores = ignores.expand(-1, num_classes, -1, -1)  # Broadcast over all classes
-            x_onehot = x_onehot * (1 - ignores)  # Ignore regions are set to 0
-            y_onehot = y_onehot * (1 - ignores)
-        else:
-            ignores = torch.zeros_like(y_onehot)
+            ignores = (y.squeeze(1) == self.ignoreIndex).unsqueeze(1).expand_as(y_onehot)  # Shape: (B, C, H, W)
+            x_onehot[ignores] = 0  # Set ignored pixels to 0
+            y_onehot[ignores] = 0
 
         # Compute TP, FP, FN
         tp = torch.sum(x_onehot * y_onehot, dim=(0, 2, 3))
-        fp = torch.sum(x_onehot * (1 - y_onehot - ignores), dim=(0, 2, 3))
+        fp = torch.sum(x_onehot * (1 - y_onehot), dim=(0, 2, 3))
         fn = torch.sum((1 - x_onehot) * y_onehot, dim=(0, 2, 3))
 
         # Apply class weighting
