@@ -140,20 +140,37 @@ def train(args, model, enc=False):
     return model
 
 # Main function
-def main(args):
+def main(args):  
+    savedir = f'../save/{args.savedir}'
+
+    if not os.path.exists(savedir):
+        os.makedirs(savedir)
+
+    with open(savedir + '/opts.txt', "w") as myfile:
+        myfile.write(str(args))
+
+    # Load Model
+    assert os.path.exists(args.model + ".py"), "Error: model definition not found"
     model_file = importlib.import_module(args.model)
     model = model_file.Net(NUM_CLASSES)
+    copyfile(args.model + ".py", savedir + '/' + args.model + ".py")
+
     if args.cuda:
         model = torch.nn.DataParallel(model).cuda()
+
     if args.state:
         model.load_state_dict(torch.load(args.state))
+
+
+    if not args.decoder:
+        print("========== ENCODER TRAINING ===========")
+        model = train(args, model, True)  
+
     
-    print("========== ENCODER TRAINING ==========")
-    model = train(args, model, True)
     print("========== DECODER TRAINING ===========")
     if not args.state:
         if args.pretrainedEncoder:
-            print("Loading encoder pretrained in ImageNet")
+            print("Loading encoder pretrained in ImageNet...")
             from erfnet_imagenet import ERFNet as ERFNet_imagenet
             pretrainedEnc = torch.nn.DataParallel(ERFNet_imagenet(1000))
             pretrainedEnc.load_state_dict(torch.load(args.pretrainedEncoder)['state_dict'])
@@ -163,13 +180,12 @@ def main(args):
         else:
             pretrainedEnc = next(model.children()).encoder
 
-        model = model_file.Net(NUM_CLASSES, encoder=pretrainedEnc)  # Attach decoder to encoder
+        model = model_file.Net(NUM_CLASSES, encoder=pretrainedEnc)  # Add decoder to encoder
         if args.cuda:
             model = torch.nn.DataParallel(model).cuda()
 
-# Train decoder
-model = train(args, model, False)
-print("========== TRAINING FINISHED ===========")
+    model = train(args, model, False)  # ✅ Pass args to train()
+    print("========== TRAINING FINISHED ===========")
 
 
 if __name__ == '__main__':
