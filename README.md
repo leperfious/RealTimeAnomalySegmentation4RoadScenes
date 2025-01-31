@@ -2,26 +2,27 @@
 
 This repository contains the code of the __Real-Time Anomaly Segmentation for Road Scenes__ project of the __Advanced Machine Learning__ course (A.Y. 2024/25) - Politecnico di Torino
 
-## Packages
+## Repository structure
 For instructions, please refer to the README in each folder:
 
 - **[train](/train)**: contains tools for training the networks (ERFNet, ENet, BiSeNETv1) for the semantic segmentation.
-
-- **[eval](/eval)** contains tools for evaluating/visualizing the networkss outputs and performing anomaly segmentations.
-
-- **[save](/save)** 
-1. containes trained BiSeNETv1, ERFNet and ENet using Cityscapes (19 known classes and 1 void class) dataset with calculated weights. 
-2. trained ERFNet (with pretrained encoder in ImageNet) using Cityscapes (19 known classes and 1 void class).
-3. trained ERFNet with pretrained encoder by using
-- Enhanced Isotropy Maximization loss, 
-- Logit Normalization loss,
-- Enhanced Isotropy Maximization loss + Focal loss,
-- Enhanced Maximization loss + Cross Entropy loss,
-- Logit Normalization loss + Focal loss,
-- Logit Normalization loss + Cross Entropy loss
-
-**[imagenet](/imagenet)** Contains script and model for pretraining ERFNet's encoder in Imagenet.
-**[trained_models](/trained_models)** Contains the trained models used in the papers. 
+- **[eval](/eval)**: contains tools for evaluating/visualizing the networkss outputs and performing anomaly segmentations.
+    - **MSP (Maximum Softmax Probability)**
+    - **MaxLogit**
+    - **MaxEntropy**
+    - **Temperature Scaling** 
+- **[save](/save)**: contains
+    -  trained BiSeNETv1, ERFNet and ENet using Cityscapes (19 known classes and 1 void class) dataset with calculated weights. 
+    -  trained ERFNet (with pretrained encoder in ImageNet) using Cityscapes (19 known classes and 1 void class).
+    -  trained ERFNet with pretrained encoder by using
+        - Enhanced Isotropy Maximization loss, 
+        - Logit Normalization loss,
+        - Enhanced Isotropy Maximization loss + Focal loss,
+        - Enhanced Maximization loss + Cross Entropy loss,
+        - Logit Normalization loss + Focal loss,
+        - Logit Normalization loss + Cross Entropy loss
+- **[imagenet](/imagenet)**: contains script and model for pretraining ERFNet's encoder in Imagenet.
+- **[trained_models](/trained_models)**: contains the trained models used in the papers. 
 
 ## Requirements:
 
