@@ -1,18 +1,37 @@
 # Functions for evaluating/visualizing the network's output
 
 Currently there are 4 usable functions to evaluate stuff:
-- eval_cityscapes_color
-- eval_cityscapes_server
 - eval_iou
 - eval_forwardTime
+- eval_cityscapes_color
+- eval_cityscapes_server
 
-## evalAnomaly.py
 
-This code can be used to produce anomaly segmentation results on various anomaly metrics.
+
+## **[eval_iou.py](/eval/eval_iou.py)**
+
+This code can be used to calculate the IoU (mean and per-class) with baseliens MSP, MaxLogit, MaxEntropy in a subset of images with labels available, like Cityscapes val/train sets.
+
+**Options:** Specify the Cityscapes folder path with '--datadir' option. Select the cityscapes subset with '--subset' ('val' or 'train'). For other options check the bottom side of the file.
 
 **Examples:**
 ```
-python evalAnomaly.py --input '/home/shyam/ViT-Adapter/segmentation/unk-dataset/RoadAnomaly21/images/*.png'
+python eval_iou.py --datadir /content/datasets/cityscapes/ --subset val --method msp
+python eval_iou.py --datadir /content/datasets/cityscapes/ --subset val --method max_logit
+python eval_iou.py --datadir /content/datasets/cityscapes/ --subset val --method max_entropy
+
+
+
+## **[evalAnomaly.py](/eval/evalAnomaly.py)**
+
+This code can be used to produce anomaly segmentation results on  anomaly metrics (FPR95, AuPRC) using Validation Datasets that mentioned.
+
+**Examples:**
+```
+python evalAnomaly.py --input /content/datasets/validation_dataset --subset val --method msp
+python evalAnomaly.py --input /content/datasets/validation_dataset --subset val --method max_logit
+python evalAnomaly.py --input /content/datasets/validation_dataset --subset val --method max_entropy
+
 ```
 
 ## eval_cityscapes_color.py 
@@ -37,15 +56,7 @@ This code can be used to produce segmentation of the Cityscapes images and conve
 python eval_cityscapes_server.py --datadir /home/datasets/cityscapes/ --subset val
 ```
 
-## eval_iou.py 
 
-This code can be used to calculate the IoU (mean and per-class) in a subset of images with labels available, like Cityscapes val/train sets.
-
-**Options:** Specify the Cityscapes folder path with '--datadir' option. Select the cityscapes subset with '--subset' ('val' or 'train'). For other options check the bottom side of the file.
-
-**Examples:**
-```
-python eval_iou.py --datadir /home/datasets/cityscapes/ --subset val
 ```
 
 ## eval_forwardTime.py
