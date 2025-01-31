@@ -5,9 +5,9 @@ This repository contains the code of the __Real-Time Anomaly Segmentation for Ro
 ## Packages
 For instructions, please refer to the README in each folder:
 
-* [train](train) contains tools for training the networks (ERFNet, ENet, BiSeNETv1) for the semantic segmentation.
-* [eval](eval) contains tools for evaluating/visualizing the networkss outputs and performing anomaly segmentations.
-* [save] (save) containes trained BiSeNETv1, ERFNet and ENet using Cityscapes (19 known classes and 1 void class) dataset with calculated weights, trained ERFNet (pretrained encoder in ImageNet) using Cityscapes (19 known classes and 1 void class), and trained ERFNet with pretrained encoder by using
+**[train](/train)** contains tools for training the networks (ERFNet, ENet, BiSeNETv1) for the semantic segmentation.
+**[eval](/eval)** contains tools for evaluating/visualizing the networkss outputs and performing anomaly segmentations.
+**[save](/save)** containes trained BiSeNETv1, ERFNet and ENet using Cityscapes (19 known classes and 1 void class) dataset with calculated weights, trained ERFNet (pretrained encoder in ImageNet) using Cityscapes (19 known classes and 1 void class), and trained ERFNet with pretrained encoder by using
 - Enhanced Isotropy Maximization loss, 
 - Logit Normalization loss,
 - Enhanced Isotropy Maximization loss + Focal loss,
