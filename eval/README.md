@@ -4,8 +4,9 @@ Currently there are 4 usable functions to evaluate stuff:
 - **[eval_iou.py](/eval/eval_iou.py)**
 - **[evalAnomaly.py](/eval/evalAnomaly.py)**
 
-- eval_cityscapes_color
-- eval_cityscapes_server
+- **[eval_cityscapes_color.py](/eval/eval_cityscapes_color.py)**
+- **[eval_cityscapes_server.py](/eval/eval_cityscapes_server.py)**
+- **[eval_forwardTime.py](/eval/eval_forwardTime.py)**
 
 
 
@@ -35,6 +36,8 @@ python evalAnomaly.py --input /content/datasets/validation_dataset --subset val 
 python evalAnomaly.py --loadDir /save/bisenet_training/ --loadWeight model_best.pth --loadModel bisenetv1.py --datadir /content/datasets/cityscapes/ --subset val --method msp
 
 ```
+
+
 
 ## **[eval_cityscapes_color.py](/eval/eval_cityscapes_color.py)**
 
