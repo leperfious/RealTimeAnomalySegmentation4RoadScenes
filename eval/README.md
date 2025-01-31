@@ -19,10 +19,12 @@ This code can be used to calculate the IoU (mean and per-class) with baseliens M
 python eval_iou.py --datadir /content/datasets/cityscapes/ --subset val --method msp
 python eval_iou.py --datadir /content/datasets/cityscapes/ --subset val --method max_logit
 python eval_iou.py --datadir /content/datasets/cityscapes/ --subset val --method max_entropy
+```
 
 
 
-## **[evalAnomaly.py](/eval/evalAnomaly.py)**
+
+ **[evalAnomaly.py](/eval/evalAnomaly.py)**
 
 This code can be used to produce anomaly segmentation results on  anomaly metrics (FPR95, AuPRC) using Validation Datasets that mentioned.
 
