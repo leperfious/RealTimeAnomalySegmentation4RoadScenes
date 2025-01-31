@@ -1,11 +1,19 @@
 # Real-Time-Anomaly-Segmentation [[Course Project](https://docs.google.com/document/d/1ElljsAprT2qX8RpePSQ3E00y_3oXrtN_CKYC6wqxyFQ/edit?usp=sharing)]
-This repository provides a starter-code setup for the Real-Time Anomaly Segmentation project of the Machine Learning Course. It consists of the code base for training ERFNet on the Cityscapes dataset and perform anomaly segmentation.
+
+This repository contains the code of the __Real-Time Anomaly Segmentation for Road Scenes__ project of the __Advanced Machine Learning__ course (A.Y. 2024/25) - Politecnico di Torino
 
 ## Packages
 For instructions, please refer to the README in each folder:
 
-* [train](train) contains tools for training the network for semantic segmentation.
-* [eval](eval) contains tools for evaluating/visualizing the network's output and performing anomaly segmentation.
+* [train](train) contains tools for training the networks (ERFNet, ENet, BiSeNETv1) for the semantic segmentation.
+* [eval](eval) contains tools for evaluating/visualizing the networkss outputs and performing anomaly segmentations.
+* [save] (save) containes trained BiSeNETv1, ERFNet and ENet using Cityscapes (19 known classes and 1 void class) dataset with calculated weights, trained ERFNet (pretrained encoder in ImageNet) using Cityscapes (19 known classes and 1 void class), and trained ERFNet with pretrained encoder by using
+- Enhanced Isotropy Maximization loss, 
+- Logit Normalization loss,
+- Enhanced Isotropy Maximization loss + Focal loss,
+- Enhanced Maximization loss + Cross Entropy loss,
+- Logit Normalization loss + Focal loss,
+- Logit Normalization loss + Cross Entropy loss
 * [imagenet](imagenet) Contains script and model for pretraining ERFNet's encoder in Imagenet.
 * [trained_models](trained_models) Contains the trained models used in the papers. 
 
