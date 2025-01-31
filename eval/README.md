@@ -36,7 +36,7 @@ python evalAnomaly.py --loadDir /save/bisenet_training/ --loadWeight model_best.
 
 ```
 
-## eval_cityscapes_color.py 
+## **[eval_cityscapes_color.py](/eval/eval_cityscapes_color.py)**
 
 This code can be used to produce segmentation of the Cityscapes images in color for visualization purposes. By default it saves images in eval/save_color/ folder. You can also visualize results in visdom with --visualize flag.
 
@@ -44,10 +44,10 @@ This code can be used to produce segmentation of the Cityscapes images in color 
 
 **Examples:**
 ```
-python eval_cityscapes_color.py --datadir /home/datasets/cityscapes/ --subset val
+python eval_cityscapes_color.py --datadir /content/datasets/cityscapes/ --subset val
 ```
 
-## eval_cityscapes_server.py 
+## [eval_cityscapes_server.py](/eval/eval_cityscapes_server.py)**
 
 This code can be used to produce segmentation of the Cityscapes images and convert the output indices to the original 'labelIds' so it can be evaluated using the scripts from Cityscapes dataset (evalPixelLevelSemanticLabeling.py) or uploaded to Cityscapes test server. By default it saves images in eval/save_results/ folder.
 
@@ -55,13 +55,12 @@ This code can be used to produce segmentation of the Cityscapes images and conve
 
 **Examples:**
 ```
-python eval_cityscapes_server.py --datadir /home/datasets/cityscapes/ --subset val
+python eval_cityscapes_server.py --datadir /content/datasets/cityscapes/ --subset val
 ```
 
 
-```
 
-## eval_forwardTime.py
+## **[eval_forwardTime.py](/eval/eval_forwardTime.py)**
 This function loads a model specified by '-m' and enters a loop to continuously estimate forward pass time (fwt) in the specified resolution. 
 
 **Options:** Option '--width' specifies the width (default: 1024). Option '--height' specifies the height (default: 512). For other options check the bottom side of the file.
