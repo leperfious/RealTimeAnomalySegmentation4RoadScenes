@@ -23,6 +23,7 @@ For instructions, please refer to the README in each folder:
         - Logit Normalization loss + Cross Entropy loss
 - **[imagenet](/imagenet)**: contains script and model for pretraining ERFNet's encoder in Imagenet.
 - **[trained_models](/trained_models)**: contains the trained models used in the papers. 
+- **[project#6_colab.ipynb](/project#6_colab.ipynb)**: Jupyter Notebook compatible with Google Colab to set up Colan environment, donwload datasets, evaluate anomalies, train models.
 
 ## Datasets:
 
@@ -39,10 +40,3 @@ For instructions, please refer to the README in each folder:
 * [**Python 3.6**](https://www.python.org/): If you don't have Python3.6 in your system, I recommend installing it with [Anaconda](https://www.anaconda.com/download/#linux)
 * [**PyTorch**](http://pytorch.org/): Make sure to install the Pytorch version for Python 3.6 with CUDA support (code only tested for CUDA 8.0). 
 * **Additional Python packages**: numpy, matplotlib, Pillow, torchvision and visdom (optional for --visualize flag)
-
-
-
-
-## Anomaly Inference:
-* The repo provides a pre-trained ERFNet on the cityscapes dataset that can be used to perform anomaly segmentation on test anomaly datasets.
-* Anomaly Inference Command:```python evalAnomaly.py --input '/home/shyam/ViT-Adapter/segmentation/unk-dataset/RoadAnomaly21/images/*.png```. Change the dataset path ```'/home/shyam/ViT-Adapter/segmentation/unk-dataset/RoadAnomaly21/images/*.png```accordingly.
