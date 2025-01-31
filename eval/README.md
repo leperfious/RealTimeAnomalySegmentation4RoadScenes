@@ -50,7 +50,7 @@ This code can be used to produce segmentation of the Cityscapes images in color 
 python eval_cityscapes_color.py --datadir /content/datasets/cityscapes/ --subset val
 ```
 
-## [eval_cityscapes_server.py](/eval/eval_cityscapes_server.py)**
+## **[eval_cityscapes_server.py](/eval/eval_cityscapes_server.py)**
 
 This code can be used to produce segmentation of the Cityscapes images and convert the output indices to the original 'labelIds' so it can be evaluated using the scripts from Cityscapes dataset (evalPixelLevelSemanticLabeling.py) or uploaded to Cityscapes test server. By default it saves images in eval/save_results/ folder.
 
