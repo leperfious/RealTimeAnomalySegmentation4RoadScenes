@@ -30,9 +30,14 @@ For instructions, please refer to the README in each folder:
 - **To train and validation**:
     - [**Cityscapes dataset**](https://www.cityscapes-dataset.com/): used **gtFine** for labels and **leftImg8bit** for RGB images. We have used [conversor](https://github.com/mcordts/cityscapesScripts/blob/master/cityscapesscripts/preparation/createTrainIdLabelImgs.py) to convert labels to `_labelTrainIds`.
 - **To test**:
-    - [**SegmentMeIfYouCan (RoadAnomaly21, RoadObstacle21)**](https://segmentmeifyoucan.com/datasets)
-    - [**Fishscapes (FS Static, FS Lost and Found)**](https://fishyscapes.com/dataset)
+    - [**SegmentMeIfYouCan**](https://segmentmeifyoucan.com/datasets)
+        - **RoadAnomaly21**: images are png, labels' masks are png
+        - **RoadObstacle21**: images are webp, labels' masks are png
+    - [**Fishscapes**](https://fishyscapes.com/dataset)
+        - **FS Static**: images are jpg, labels' masks are png
+        - **FS Lost and Found**: images images are png, labels' masks are png
     - [**Road Anomaly**](https://www.epfl.ch/labs/cvlab/data/road-anomaly/)
+        - **RoadAnomaly**:images are jpg, labels' masks are png
 
 
 ## Requirements:
