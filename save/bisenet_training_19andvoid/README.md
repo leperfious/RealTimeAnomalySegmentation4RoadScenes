@@ -1,4 +1,4 @@
-## **[Automated_log.txt](/save/bisenet_training_19andvoid/)**
+## **[automated_log.txt](/save/bisenet_training_19andvoid/automated_log.txt)**
     - logs for full model
 
 ## **[best.txt](/save/bisenet_training_19andvoid/best.txt)**
