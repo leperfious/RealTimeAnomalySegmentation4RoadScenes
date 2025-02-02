@@ -15,3 +15,10 @@
 
 ## **[enet.py](/save/enet_training_19andvoid/enet.py)**
     - model definition
+
+
+## **MODEL**
+
+<div style="text-align: center;">
+  <img src="/results/enet19andvoid.png" width="700">
+</div>
