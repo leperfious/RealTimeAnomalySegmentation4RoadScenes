@@ -428,29 +428,47 @@ def main(args):
     f.close()
     """
 
-    #train(args, model)
-    if (not args.decoder):
-        print("========== ENCODER TRAINING ===========")
-        model = train(args, model, True) #Train encoder
-    #CAREFUL: for some reason, after training encoder alone, the decoder gets weights=0. 
-    #We must reinit decoder weights or reload network passing only encoder in order to train decoder
+##### -----  this part of the code is not training both of them from scratch, it trains encoder and then fine tunes decoder --------
+
+    # #train(args, model)
+    # if (not args.decoder):
+    #     print("========== ENCODER TRAINING ===========")
+    #     model = train(args, model, True) #Train encoder
+    # #CAREFUL: for some reason, after training encoder alone, the decoder gets weights=0. 
+    # #We must reinit decoder weights or reload network passing only encoder in order to train decoder
+    # print("========== DECODER TRAINING ===========")
+    # if (not args.state):
+    #     if args.pretrainedEncoder:
+    #         print("Loading encoder pretrained in imagenet")
+    #         from erfnet_imagenet import ERFNet as ERFNet_imagenet
+    #         pretrainedEnc = torch.nn.DataParallel(ERFNet_imagenet(1000))
+    #         pretrainedEnc.load_state_dict(torch.load(args.pretrainedEncoder)['state_dict'])
+    #         pretrainedEnc = next(pretrainedEnc.children()).features.encoder
+    #         if (not args.cuda):
+    #             pretrainedEnc = pretrainedEnc.cpu()     #because loaded encoder is probably saved in cuda
+    #     else:
+    #         pretrainedEnc = next(model.children()).encoder
+    #     model = model_file.Net(NUM_CLASSES, encoder=pretrainedEnc)  #Add decoder to encoder
+    #     if args.cuda:
+    #         model = torch.nn.DataParallel(model).cuda()
+    #     #When loading encoder reinitialize weights for decoder because they are set to 0 when training dec
+    # model = train(args, model, False)   #Train decoder
+    # print("========== TRAINING FINISHED ===========")
+
+    print("========== ENCODER TRAINING ===========")
+    model = train(args, model, True)  # trains encoder with pre-calc weights
+
     print("========== DECODER TRAINING ===========")
-    if (not args.state):
-        if args.pretrainedEncoder:
-            print("Loading encoder pretrained in imagenet")
-            from erfnet_imagenet import ERFNet as ERFNet_imagenet
-            pretrainedEnc = torch.nn.DataParallel(ERFNet_imagenet(1000))
-            pretrainedEnc.load_state_dict(torch.load(args.pretrainedEncoder)['state_dict'])
-            pretrainedEnc = next(pretrainedEnc.children()).features.encoder
-            if (not args.cuda):
-                pretrainedEnc = pretrainedEnc.cpu()     #because loaded encoder is probably saved in cuda
-        else:
-            pretrainedEnc = next(model.children()).encoder
-        model = model_file.Net(NUM_CLASSES, encoder=pretrainedEnc)  #Add decoder to encoder
-        if args.cuda:
-            model = torch.nn.DataParallel(model).cuda()
-        #When loading encoder reinitialize weights for decoder because they are set to 0 when training dec
-    model = train(args, model, False)   #Train decoder
+
+    # it uses trained encoder here
+    pretrainedEnc = next(model.children()).encoder  # Take the trained encoder
+    model = model_file.Net(NUM_CLASSES, encoder=pretrainedEnc)  # it uses pretrained encoder of ours
+
+    if args.cuda:
+        model = torch.nn.DataParallel(model).cuda()
+
+    model = train(args, model, False)   # trains decoder with pre-calc weights
+
     print("========== TRAINING FINISHED ===========")
 
 if __name__ == '__main__':
@@ -460,7 +478,7 @@ if __name__ == '__main__':
     parser.add_argument('--state')
 
     parser.add_argument('--port', type=int, default=8097)
-    parser.add_argument('--datadir', default=os.getenv("/content/datasets/cityscapes/"))
+    parser.add_argument('--datadir', default="/content/datasets/cityscapes/")
     parser.add_argument('--height', type=int, default=512)
     parser.add_argument('--num-epochs', type=int, default=30)
     parser.add_argument('--num-workers', type=int, default=4)
@@ -469,8 +487,8 @@ if __name__ == '__main__':
     parser.add_argument('--steps-plot', type=int, default=50)
     parser.add_argument('--epochs-save', type=int, default=0)    #You can use this value to save model every X epochs
     parser.add_argument('--savedir', required=True)
-    parser.add_argument('--decoder', action='store_true')
-    parser.add_argument('--pretrainedEncoder') #, default="../trained_models/erfnet_encoder_pretrained.pth.tar")
+    # parser.add_argument('--decoder', action='store_true')
+    # parser.add_argument('--pretrainedEncoder') #, default="../trained_models/erfnet_encoder_pretrained.pth.tar")
     parser.add_argument('--visualize', action='store_true')
 
     parser.add_argument('--iouTrain', action='store_true', default=False) #recommended: False (takes more time to train otherwise)
