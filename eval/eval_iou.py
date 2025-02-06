@@ -23,6 +23,9 @@ from erfnet import ERFNet
 from transform import Relabel, ToLabel, Colorize
 from iouEval import iouEval, getColorEntry
 
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 NUM_CHANNELS = 3
 NUM_CLASSES = 20
 
