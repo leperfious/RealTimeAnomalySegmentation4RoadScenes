@@ -258,7 +258,7 @@ class FeatureFusionModule(nn.Module):
 
 class BiSeNetV1(nn.Module):
     def __init__(self, n_classes, aux_mode='train', *args, **kwargs):
-        super(Net, self).__init__()
+        super(BiSeNetV1, self).__init__()
         self.cp = ContextPath()
         self.sp = SpatialPath()
         self.ffm = FeatureFusionModule(256, 256)
