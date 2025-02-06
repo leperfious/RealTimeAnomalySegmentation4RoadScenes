@@ -26,6 +26,10 @@ from iouEval import iouEval, getColorEntry
 NUM_CHANNELS = 3
 NUM_CLASSES = 20
 
+ERFNet = importlib.import_module('train.erfnet').ERFNet
+ENet = importlib.import_module('train.enet').ENet
+BiSeNetV1 = importlib.import_module('train.bisenetv1').BiSeNetV1
+
 image_transform = ToPILImage()
 input_transform_cityscapes = Compose([
     Resize(512, Image.BILINEAR),
@@ -58,7 +62,16 @@ def main(args):
     print ("Loading model: " + modelpath)
     print ("Loading weights: " + weightspath)
 
-    model = ERFNet(NUM_CLASSES)
+    # I change it here to make it be available also for newly trained models.
+    device = torch.device('cuda' if torch.cuda.is_available() and not args.cpu else 'cpu')
+    if args.model == "erfnet":
+        model = ERFNet(NUM_CLASSES).to(device)
+    elif args.model == "enet":
+        model = ENet(NUM_CLASSES).to(device)
+    elif args.model == "bisenet":
+        model = BiSeNetV1(NUM_CLASSES).to(device)
+    
+
 
     # model = torch.nn.DataParallel(model)
     if (not args.cpu):
@@ -178,4 +191,5 @@ if __name__ == '__main__':
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--cpu', action='store_true')
     parser.add_argument('--method', default='msp', choices=['msp', 'max_logit', 'max_entropy'], help='Method for anomaly detection')
+    parser.add_argument('--model', default="erfnet")
     main(parser.parse_args())
