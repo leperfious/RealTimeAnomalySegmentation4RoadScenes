@@ -20,6 +20,8 @@ from torchvision.transforms import ToTensor, ToPILImage
 
 from dataset import cityscapes
 from erfnet import ERFNet
+from enet import ENet
+from bisnet import BiSeNet
 from transform import Relabel, ToLabel, Colorize
 from iouEval import iouEval, getColorEntry
 
@@ -29,9 +31,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 NUM_CHANNELS = 3
 NUM_CLASSES = 20
 
-ERFNet = importlib.import_module('train.erfnet').ERFNet
-ENet = importlib.import_module('train.enet').ENet
-BiSeNetV1 = importlib.import_module('train.bisenetv1').BiSeNetV1
+# ERFNet = importlib.import_module('train.erfnet').ERFNet
+# ENet = importlib.import_module('train.enet').ENet
+# BiSeNetV1 = importlib.import_module('train.bisenetv1').BiSeNetV1
 
 image_transform = ToPILImage()
 input_transform_cityscapes = Compose([
