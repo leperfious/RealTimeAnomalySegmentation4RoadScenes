@@ -63,11 +63,6 @@ def load_my_state_dict(model, state_dict):  #custom function to load model when 
                 own_state[name].copy_(param)
         return model
 
-# # FPR95 implementation **
-# def fpr_at_95_tpr(y_scores, y_true):
-#     fpr, tpr, thresholds = roc_curve (y_true, y_scores)
-#     close_tpr = np.abs(tpr-0.95).argmin()
-#     return fpr[close_tpr]
 
 
 def main():
