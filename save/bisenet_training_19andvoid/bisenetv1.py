@@ -256,7 +256,7 @@ class FeatureFusionModule(nn.Module):
         return wd_params, nowd_params
 
 
-class Net(nn.Module):
+class BiSeNetV1(nn.Module):
     def __init__(self, n_classes, aux_mode='train', *args, **kwargs):
         super(Net, self).__init__()
         self.cp = ContextPath()
