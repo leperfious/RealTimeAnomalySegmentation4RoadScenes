@@ -1,1 +1,0 @@
-Best epoch is 29, with Val-IoU= 0.5274
