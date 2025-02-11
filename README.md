@@ -37,7 +37,7 @@ For instructions, please refer to the README in each folder:
         - **FS Static**: images are jpg, labels' masks are png
         - **FS Lost and Found**: images are png, labels' masks are png
     - [**Road Anomaly**](https://www.epfl.ch/labs/cvlab/data/road-anomaly/)
-        - **RoadAnomaly**:images are jpg, labels' masks are png
+        - **RoadAnomaly**: images are jpg, labels' masks are png
 
 
 ## Requirements:
