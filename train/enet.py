@@ -442,7 +442,7 @@ class UpsamplingBottleneck(nn.Module):
         return self.out_activation(out)
 
 
-class ENet(nn.Module):
+class Net(nn.Module):
     """Generate the ENet model.
 
     Keyword arguments:
