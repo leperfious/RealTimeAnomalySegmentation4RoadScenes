@@ -35,7 +35,7 @@ For instructions, please refer to the README in each folder:
         - **RoadObstacle21**: images are webp, labels' masks are png
     - [**Fishscapes**](https://fishyscapes.com/dataset)
         - **FS Static**: images are jpg, labels' masks are png
-        - **FS Lost and Found**: images images are png, labels' masks are png
+        - **FS Lost and Found**: images are png, labels' masks are png
     - [**Road Anomaly**](https://www.epfl.ch/labs/cvlab/data/road-anomaly/)
         - **RoadAnomaly**:images are jpg, labels' masks are png
 
