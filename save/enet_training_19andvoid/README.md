@@ -7,6 +7,9 @@
 ## **[model_best.pth](/save/enet_training_19andvoid/model_best.pth)**
     - the best model
 
+## **[model_best.pth.tar](/save/enet_training_19andvoid/model_best.pth.tar)**
+    - the best model in tarball (zipped)
+
 ## **[model.txt](/save/enet_training_19andvoid/model.txt)**
     - text description of the full model
 
@@ -20,5 +23,5 @@
 ## **MODEL**
 
 <div style="text-align: center;">
-  <img src="/results/enet19andvoid.png" width="700">
+  <img src="/results/ENet_19andvoid.png" width="700">
 </div>
