@@ -15,3 +15,9 @@
 
 ## **[bisenetv1.py](/save/bisenet_training_19andvoid/bisenetv1.py)**
     - model definition
+
+## **MODEL**
+
+<div style="text-align: center;">
+  <img src="/results/BiSeNet_19andvoid.png" width="700">
+</div>
