@@ -78,22 +78,36 @@ def main(args):
         model = torch.nn.DataParallel(model).cuda()
 
     
-    state_dict = torch.load(weightspath, map_location = lambda storage, loc: storage)
-    if args.model == 'BiSeNet':
-        new_state_dict = {}
-        for k, v in state_dict.items():
-            if k.startswith("module."):
-                new_state_dict[k[7:]] = v
-            else:
-                new_state_dict[k] = v
-        model.load_state_dict(new_state_dict, strict = False)
-    elif args.model == 'ENet':
+    # state_dict = torch.load(weightspath, map_location = lambda storage, loc: storage)
+    # if args.model == 'BiSeNet':
+    #     new_state_dict = {}
+    #     for k, v in state_dict.items():
+    #         if k.startswith("module."):
+    #             new_state_dict[k[7:]] = v
+    #         else:
+    #             new_state_dict[k] = v
+    #     model.load_state_dict(new_state_dict, strict = False)
+    # elif args.model == 'ENet':
+    #     state_dict = {k if k.startswith("module.") else "module." + k: v for k, v in state_dict.items()}
+    #     model.load_state_dict(state_dict)
+    # else:
+    #     model = load_my_state_dict(model, state_dict, args.model)
+
+    # print("Model and weight LOADED SUCCESSFULLY.")
+
+    state_dict = torch.load(weightspath, map_location=lambda storage, loc: storage)
+    if(args.model == 'ENet' or args.model == 'BiSeNet'):
+        #print(state_dict)
         state_dict = {k if k.startswith("module.") else "module." + k: v for k, v in state_dict.items()}
+        model.load_state_dict(state_dict)
+    elif (args.quantize):
+        print("Load nothing")
+        # model = load_quant_dict(model, state_dict)
         model.load_state_dict(state_dict)
     else:
         model = load_my_state_dict(model, state_dict, args.model)
-
-    print("Model and weight LOADED SUCCESSFULLY.")
+    #print(model)
+    print ("Model and weights LOADED successfully")
 
     # __________ part1&2
 
@@ -127,25 +141,36 @@ def main(args):
 
         # output changes for Bisenet***
 
-        if args.model == 'BiSeNet':
-            new_outputs = outputs[0]
+        # if args.model == 'BiSeNet':
+        #     new_outputs = outputs[0]
+        # else:
+        #     new_outputs = outputs
+
+        # if args.method == 'msp':
+        #     softmax_probability = F.softmax(new_outputs, dim=1)  # Changed from dim=1 to dim=0
+        #     anomaly_result = torch.argmax(softmax_probability, dim=1)
+        # elif args.method == 'max_logit':
+        #     anomaly_result = torch.argmax(new_outputs, dim=1)  # Changed from dim=1 to dim=0
+        # elif args.method == 'max_entropy':
+        #     softmax_probability = F.softmax(new_outputs, dim=1)  # Changed from dim=1 to dim=0
+        #     log_softmax_probs = F.log_softmax(new_outputs, dim=1)  # Changed from dim=1 to dim=0
+        #     entropy = -torch.sum(softmax_probability * log_softmax_probs, dim=1)  # Changed from dim=1 to dim=0
+        #     anomaly_result = torch.argmax(entropy, dim=1)  # Changed from dim=1 to dim=0
+
+        # # ________________________ msp, max_logit, max_entropy _______________________ ends
+
+        # iouEvalVal.addBatch(anomaly_result.unsqueeze(1).data, labels)
+
+        if args.model == "bisenet":
+            result = outputs[0]
         else:
-            new_outputs = outputs
+            result = outputs
 
-        if args.method == 'msp':
-            softmax_probability = F.softmax(new_outputs, dim=1)  # Changed from dim=1 to dim=0
-            anomaly_result = torch.argmax(softmax_probability, dim=1)
-        elif args.method == 'max_logit':
-            anomaly_result = torch.argmax(new_outputs, dim=1)  # Changed from dim=1 to dim=0
-        elif args.method == 'max_entropy':
-            softmax_probability = F.softmax(new_outputs, dim=1)  # Changed from dim=1 to dim=0
-            log_softmax_probs = F.log_softmax(new_outputs, dim=1)  # Changed from dim=1 to dim=0
-            entropy = -torch.sum(softmax_probability * log_softmax_probs, dim=1)  # Changed from dim=1 to dim=0
-            anomaly_result = torch.argmax(entropy, dim=1)  # Changed from dim=1 to dim=0
+       
+         
 
-        # ________________________ msp, max_logit, max_entropy _______________________ ends
-
-        iouEvalVal.addBatch(anomaly_result.unsqueeze(1).data, labels)
+      
+        iouEvalVal.addBatch(result.max(1)[1].unsqueeze(1).data, labels)
 
 
         filenameSave = filename[0].split("leftImg8bit/")[1] 
