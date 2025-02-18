@@ -79,11 +79,20 @@ def main(args):
 
     
     state_dict = torch.load(weightspath, map_location = lambda storage, loc: storage)
-    if args.model in ['ENet', 'BiSeNet']:
+    if args.model == 'BiSeNet':
+        new_state_dict = {}
+        for k, v in state_dict.items():
+            if k.startswith("module."):
+                new_state_dict[k[7:]] = v
+            else:
+                new_state_dict[k] = v
+        model.load_state_dict(new_state_dict, strict = False)
+    elif args.model == 'ENet':
         state_dict = {k if k.startswith("module.") else "module." + k: v for k, v in state_dict.items()}
         model.load_state_dict(state_dict)
     else:
         model = load_my_state_dict(model, state_dict, args.model)
+
     print("Model and weight LOADED SUCCESSFULLY.")
 
     # __________ part1&2
@@ -115,14 +124,22 @@ def main(args):
 
         # ________________________ msp, max_logit, max_entropy _______________________ starts
 
+
+        # output changes for Bisenet***
+
+        if args.model == 'BiSeNet':
+            new_outputs = outputs[0]
+        else:
+            new_outputs = outputs
+
         if args.method == 'msp':
-            softmax_probability = F.softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
+            softmax_probability = F.softmax(new_outputs, dim=1)  # Changed from dim=1 to dim=0
             anomaly_result = torch.argmax(softmax_probability, dim=1)
         elif args.method == 'max_logit':
-            anomaly_result = torch.argmax(outputs, dim=1)  # Changed from dim=1 to dim=0
+            anomaly_result = torch.argmax(new_outputs, dim=1)  # Changed from dim=1 to dim=0
         elif args.method == 'max_entropy':
-            softmax_probability = F.softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
-            log_softmax_probs = F.log_softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
+            softmax_probability = F.softmax(new_outputs, dim=1)  # Changed from dim=1 to dim=0
+            log_softmax_probs = F.log_softmax(new_outputs, dim=1)  # Changed from dim=1 to dim=0
             entropy = -torch.sum(softmax_probability * log_softmax_probs, dim=1)  # Changed from dim=1 to dim=0
             anomaly_result = torch.argmax(entropy, dim=1)  # Changed from dim=1 to dim=0
 
