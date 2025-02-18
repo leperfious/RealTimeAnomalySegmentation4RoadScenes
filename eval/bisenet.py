@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
 
-resnet18_url = 'https://download.pytorch.org/models/resnet18-5c106cde.pth'
+from resnet import Resnet18
 
 from torch.nn import BatchNorm2d
 
