@@ -21,7 +21,7 @@ from dataset import cityscapes
 from erfnet import ERFNet
 from enet import ENet
 from bisenet import BiSeNet
-from resnet import Resnet18
+# from resnet import Resnet18
 from transform import Relabel, ToLabel, Colorize
 from iouEval import iouEval, getColorEntry
 
