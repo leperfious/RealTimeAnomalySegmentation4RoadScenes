@@ -40,9 +40,15 @@ target_transform_cityscapes = Compose([
 ])
 
 input_transform_cityscapes_bisenet = Compose([
-    Resize(512, Image.BILINEAR),
+    Resize((512,1024), Image.BILINEAR),
     ToTensor(),
     Normalize(mean=torch.tensor([0.485, 0.456, 0.406]), std=torch.tensor([0.229, 0.224, 0.225])),
+])
+
+target_transform_cityscapes_bisenet = Compose([
+    Resize((512,1024), Image.NEAREST),
+    ToLabel(),
+    Relabel(255, 19),   #ignore label to 19
 ])
 
 def load_my_state_dict(model, state_dict, model_name):  #custom function to load model when not all dict elements
@@ -72,11 +78,14 @@ def main(args):
     # _________ part1
 
     global input_transform_cityscapes
+    global target_transform_cityscapes
+
     if(args.model == 'ENet'):
         model = ENet(NUM_CLASSES)
     elif(args.model == 'BiSeNet'):
         model = BiSeNet(NUM_CLASSES)
         input_transform_cityscapes = input_transform_cityscapes_bisenet
+        target_transform_cityscapes = target_transform_cityscapes_bisenet
     else:
         model = ERFNet(NUM_CLASSES)
 
@@ -171,6 +180,11 @@ def main(args):
     for i in range(iou_classes.size(0)):
         iouStr = getColorEntry(iou_classes[i])+'{:0.2f}'.format(iou_classes[i]*100) + '\033[0m'
         iou_classes_str.append(iouStr)
+
+    print(f"Model: {args.model}")
+    print(f"Output shape: {new_outputs.shape}")
+    print(f"Min/Max values: {new_outputs.min().item()}, {new_outputs.max().item()}")
+    print(f"Unique predicted classes: {torch.unique(torch.argmax(new_outputs, dim=1))}")
 
     print("---------------------------------------")
     print("Method used:", args.method)
