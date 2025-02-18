@@ -186,6 +186,9 @@ def main(args):
     print(f"Min/Max values: {new_outputs.min().item()}, {new_outputs.max().item()}")
     print(f"Unique predicted classes: {torch.unique(torch.argmax(new_outputs, dim=1))}")
 
+    print("Ground truth unique classes:", torch.unique(labels))
+    print("Predicted unique classes:", torch.unique(anomaly_result))
+
     print("---------------------------------------")
     print("Method used:", args.method)
     print("Took", time.time() - start, "seconds")
