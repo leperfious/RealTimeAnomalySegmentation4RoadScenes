@@ -78,36 +78,36 @@ def main(args):
         model = torch.nn.DataParallel(model).cuda()
 
     
-    # state_dict = torch.load(weightspath, map_location = lambda storage, loc: storage)
-    # if args.model == 'BiSeNet':
-    #     new_state_dict = {}
-    #     for k, v in state_dict.items():
-    #         if k.startswith("module."):
-    #             new_state_dict[k[7:]] = v
-    #         else:
-    #             new_state_dict[k] = v
-    #     model.load_state_dict(new_state_dict, strict = False)
-    # elif args.model == 'ENet':
-    #     state_dict = {k if k.startswith("module.") else "module." + k: v for k, v in state_dict.items()}
-    #     model.load_state_dict(state_dict)
-    # else:
-    #     model = load_my_state_dict(model, state_dict, args.model)
-
-    # print("Model and weight LOADED SUCCESSFULLY.")
-
-    state_dict = torch.load(weightspath, map_location=lambda storage, loc: storage)
-    if(args.model == 'ENet' or args.model == 'BiSeNet'):
-        #print(state_dict)
+    state_dict = torch.load(weightspath, map_location = lambda storage, loc: storage)
+    if args.model == 'BiSeNet':
+        new_state_dict = {}
+        for k, v in state_dict.items():
+            if k.startswith("module."):
+                new_state_dict[k[7:]] = v
+            else:
+                new_state_dict[k] = v
+        model.load_state_dict(new_state_dict, strict = False)
+    elif args.model == 'ENet':
         state_dict = {k if k.startswith("module.") else "module." + k: v for k, v in state_dict.items()}
-        model.load_state_dict(state_dict)
-    elif (args.quantize):
-        print("Load nothing")
-        # model = load_quant_dict(model, state_dict)
         model.load_state_dict(state_dict)
     else:
         model = load_my_state_dict(model, state_dict, args.model)
-    #print(model)
-    print ("Model and weights LOADED successfully")
+
+    print("Model and weight LOADED SUCCESSFULLY.")
+
+    # state_dict = torch.load(weightspath, map_location=lambda storage, loc: storage)
+    # if(args.model == 'ENet' or args.model == 'BiSeNet'):
+    #     #print(state_dict)
+    #     state_dict = {k if k.startswith("module.") else "module." + k: v for k, v in state_dict.items()}
+    #     model.load_state_dict(state_dict)
+    # elif (args.quantize):
+    #     print("Load nothing")
+    #     # model = load_quant_dict(model, state_dict)
+    #     model.load_state_dict(state_dict)
+    # else:
+    #     model = load_my_state_dict(model, state_dict, args.model)
+    # #print(model)
+    # print ("Model and weights LOADED successfully")
 
     # __________ part1&2
 
