@@ -1,6 +1,5 @@
 # Code to calculate IoU (mean and per-class) in a dataset
-# Nov 2017
-# Eduardo Romera
+# FEB 2025
 #######################
 
 import numpy as np
@@ -39,17 +38,20 @@ target_transform_cityscapes = Compose([
     Relabel(255, 19),   #ignore label to 19
 ])
 
-def load_my_state_dict(model, state_dict):  #custom function to load model when not all dict elements
-        own_state = model.state_dict()
-        for name, param in state_dict.items():
-            if name not in own_state:
-                if name.startswith("module."):
-                    own_state[name.split("module.")[-1]].copy_(param)
+def load_my_state_dict(model, state_dict, model_name):  #custom function to load model when not all dict elements
+        if(model_name == 'ERFNet'):
+            own_state = model.state_dict()
+            for name, param in state_dict.items():
+                if name not in own_state:
+                    if name.startswith("module."):
+                        own_state[name.split("module.")[-1]].copy_(param)
+                    else:
+                        print(name, " not loaded")
+                        continue
                 else:
-                    print(name, " not loaded")
-                    continue
-            else:
-                own_state[name].copy_(param)
+                    own_state[name].copy_(param)
+        else:  # for BiSeNet and ENet
+            model = model.load_state_dict(state_dict)
         return model
 
 def main(args):
@@ -60,33 +62,36 @@ def main(args):
     print ("Loading model: " + modelpath)
     print ("Loading weights: " + weightspath)
 
-    model = ERFNet(NUM_CLASSES)
+    # _________ part1
+
+    if(args.model == 'ENet'):
+        model = ENet(NUM_CLASSES)
+    elif(args.model == 'BiSeNet'):
+        model = BiSeNet(NUM_CLASSES)
+    else:
+        model = ERFNet(NUM_CLASSES)
+
 
     # model = torch.nn.DataParallel(model)
     if (not args.cpu):
         model = torch.nn.DataParallel(model).cuda()
 
-    # to add
+    
+    state_dict = torch.load(weightspath, map_location = lambda storage, loc: storage)
+    if args.model in ['ENet', 'BiSeNet']:
+        state_dict = {k if k.startswith("module.") else "module." + k: v for k, v in state_dict.items()}
+        model.load_state_dict(state_dict)
+    else:
+        model = load_my_state_dict(model, state_dict, args.model)
+    print("Model and weight LOADED SUCCESSFULLY.")
 
-    # if not os.path.exists(args.datadir):
-    #     raise FileNotFoundError(f"Dataset directory not found: {args.datadir}")
-    # print(f"Using dataset directory: {args.datadir}")
-
-    # Update torch.load to handle warning
-    try:
-        model = load_my_state_dict(model, torch.load(weightspath, map_location=lambda storage, loc: storage, weights_only=True))
-    except TypeError:  # For older PyTorch versions
-        model = load_my_state_dict(model, torch.load(weightspath, map_location=lambda storage, loc: storage))
-
-
-    # model = load_my_state_dict(model, torch.load(weightspath, map_location=lambda storage, loc: storage))
-    # print ("Model and weights LOADED successfully")
+    # __________ part1&2
 
     model.eval() # evaluation starts
 
-    # if(not os.path.exists(args.datadir)):
-    #     print ("Error: datadir could not be loaded")
-    #     return
+    if(not os.path.exists(args.datadir)):
+        print ("Error: datadir could not be loaded")
+        return
 
 
     loader = DataLoader(cityscapes(args.datadir, input_transform_cityscapes, target_transform_cityscapes, subset=args.subset),
@@ -97,7 +102,7 @@ def main(args):
     start = time.time()
 
     # To write results tab1 to file results1_mIoU.txt
-    results_file = open("results1_mIoU.txt", "a")
+    results_file = open("results_void_mIoU.txt", "a")
 
     for step, (images, labels, filename, _ ) in enumerate(loader):
         if (not args.cpu):
@@ -111,18 +116,19 @@ def main(args):
 
         if args.method == 'msp':
             softmax_probability = F.softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
-            anomaly_result = torch.argmax(softmax_probability, dim=1).unsqueeze(1).data
+            anomaly_result = torch.argmax(softmax_probability, dim=1)
         elif args.method == 'max_logit':
-            anomaly_result = torch.argmax(outputs, dim=1).unsqueeze(1).data  # Changed from dim=1 to dim=0
+            anomaly_result = torch.argmax(outputs, dim=1)  # Changed from dim=1 to dim=0
         elif args.method == 'max_entropy':
             softmax_probability = F.softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
             log_softmax_probs = F.log_softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
             entropy = -torch.sum(softmax_probability * log_softmax_probs, dim=1)  # Changed from dim=1 to dim=0
-            anomaly_result = torch.argmax(entropy, dim=1).unsqueeze(1).data  # Changed from dim=1 to dim=0
+            anomaly_result = torch.argmax(entropy, dim=1)  # Changed from dim=1 to dim=0
 
         # ________________________ msp, max_logit, max_entropy _______________________ ends
 
-        iouEvalVal.addBatch(anomaly_result, labels)
+        iouEvalVal.addBatch(anomaly_result.unsqueeze(1).data, labels)
+
 
         filenameSave = filename[0].split("leftImg8bit/")[1] 
         print(step, filenameSave)
@@ -180,4 +186,5 @@ if __name__ == '__main__':
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--cpu', action='store_true')
     parser.add_argument('--method', default='msp', choices=['msp', 'max_logit', 'max_entropy'], help='Method for anomaly detection')
+    parser.add_argument('--model', default ='ERFNet', choices=['ERFNet', 'ENet', 'BiSeNet'])
     main(parser.parse_args())

@@ -103,4 +103,4 @@ python eval_forwardTime.py
 **NOTE**: Paper values were obtained with a single Titan X (Maxwell) and a Jetson TX1 using the original Torch code. The pytorch code is a bit faster, but cudahalf (FP16) seems to give problems at the moment for some pytorch versions so this code only runs at FP32 (a bit slower).
 
 
-
+**NOTE**: In the network modules, Net has been changed to the ENet, ERFNet, BiSeNet
