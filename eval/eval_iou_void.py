@@ -64,7 +64,7 @@ def load_my_state_dict(model, state_dict, model_name):  #custom function to load
                 else:
                     own_state[name].copy_(param)
         else:  # for BiSeNet and ENet
-            model = model.load_state_dict(state_dict)
+            model = model.load_state_dict(state_dict, strict = False)
         return model
 
 def main(args):
@@ -97,12 +97,7 @@ def main(args):
     
     state_dict = torch.load(weightspath, map_location = lambda storage, loc: storage)
     if args.model == 'BiSeNet':
-        new_state_dict = {}
-        for k, v in state_dict.items():
-            if k.startswith("module."):
-                new_state_dict[k[7:]] = v
-            else:
-                new_state_dict[k] = v
+        new_state_dict = {k[7:] if k.startswith("module.") else k: v for k, v in state_dict.items()}
         model.load_state_dict(new_state_dict, strict = False)
     elif args.model == 'ENet':
         state_dict = {k if k.startswith("module.") else "module." + k: v for k, v in state_dict.items()}
@@ -167,7 +162,9 @@ def main(args):
 
         # ________________________ msp, max_logit, max_entropy _______________________ ends
 
-        iouEvalVal.addBatch(anomaly_result.unsqueeze(1).data, labels)
+        # iouEvalVal.addBatch(anomaly_result.unsqueeze(1).data, labels)
+        valid_mask = labels != 19
+        iouEvalVal.addBatch(anomaly_result.unsqueeze(1).data * valid_mask, labels * valid_mask)
 
 
         filenameSave = filename[0].split("leftImg8bit/")[1] 
@@ -181,14 +178,15 @@ def main(args):
         iouStr = getColorEntry(iou_classes[i])+'{:0.2f}'.format(iou_classes[i]*100) + '\033[0m'
         iou_classes_str.append(iouStr)
 
+    # Debugging outputs
     print(f"Model: {args.model}")
     print(f"Output shape: {new_outputs.shape}")
     print(f"Min/Max values: {new_outputs.min().item()}, {new_outputs.max().item()}")
-    print(f"Unique predicted classes: {torch.unique(torch.argmax(new_outputs, dim=1))}")
+    print(f"Unique predicted classes: {torch.unique(anomaly_result)}")
+    print(f"Ground truth unique classes: {torch.unique(labels)}")
 
-    print("Ground truth unique classes:", torch.unique(labels))
-    print("Predicted unique classes:", torch.unique(anomaly_result))
 
+    #////
     print("---------------------------------------")
     print("Method used:", args.method)
     print("Took", time.time() - start, "seconds")
