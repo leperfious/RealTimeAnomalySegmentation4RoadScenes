@@ -9,7 +9,6 @@ import torch.nn.functional as F
 import os
 import importlib
 import time
-from erfnet_quantized import Net
 from erfnet import ERFNet
 from enet import ENet
 from bisenet import BiSeNet
