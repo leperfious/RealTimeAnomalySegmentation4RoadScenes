@@ -1,0 +1,81 @@
+
+
+BiSeNet
+
+
+Method used: msp
+Per-Class IoU:
+Road: 8.47%
+Sidewalk: 0.12%
+Building: 7.72%
+Wall: 0.52%
+Fence: 0.58%
+Pole: 0.74%
+Traffic Light: 0.35%
+Traffic Sign: 0.04%
+Vegetation: 0.00%
+Terrain: 0.09%
+Sky: 0.73%
+Person: 0.00%
+Rider: 0.03%
+Car: 0.03%
+Truck: 0.00%
+Bus: 0.04%
+Train: 0.02%
+Motorcycle: 0.00%
+Bicycle: 0.46%
+MEAN IoU: 1.05%
+
+
+ENet
+
+
+Method used: msp
+Per-Class IoU:
+Road: 90.78%
+Sidewalk: 56.61%
+Building: 77.79%
+Wall: 22.01%
+Fence: 13.31%
+Pole: 18.12%
+Traffic Light: 0.00%
+Traffic Sign: 23.12%
+Vegetation: 83.14%
+Terrain: 40.54%
+Sky: 84.83%
+Person: 35.65%
+Rider: 0.00%
+Car: 75.64%
+Truck: 13.27%
+Bus: 4.63%
+Train: 3.86%
+Motorcycle: 0.00%
+Bicycle: 23.91%
+MEAN IoU: 35.12%
+
+
+ERFNet
+
+
+Method used: msp
+Per-Class IoU:
+Road: 93.70%
+Sidewalk: 67.01%
+Building: 82.72%
+Wall: 36.08%
+Fence: 35.73%
+Pole: 40.76%
+Traffic Light: 41.93%
+Traffic Sign: 51.13%
+Vegetation: 87.42%
+Terrain: 48.24%
+Sky: 91.14%
+Person: 58.87%
+Rider: 32.42%
+Car: 86.91%
+Truck: 25.77%
+Bus: 42.91%
+Train: 29.91%
+Motorcycle: 18.77%
+Bicycle: 55.60%
+MEAN IoU: 54.05%
