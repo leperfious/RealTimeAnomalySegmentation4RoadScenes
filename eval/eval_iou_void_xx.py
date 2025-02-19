@@ -70,16 +70,11 @@ def main(args):
         model = torch.nn.DataParallel(model).cuda()
 
     # Load model weights and handle module prefix issues
-    state_dict = torch.load(weightspath, map_location=lambda storage, loc: storage)
+    state_dict = torch.load(weightspath, map_location=lambda storage, loc: storage, weights_only=True)
 
     if args.model == 'BiSeNet':
-        if any(k.startswith("module.") for k in state_dict.keys()):
-            print("⚠️ Removing 'module.' prefix from state_dict...")
-            state_dict = {k[7:]: v for k, v in state_dict.items()}  # Remove "module."
-        
-        missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
-        print(f"🔎 Missing keys: {missing_keys}")
-        print(f"🔎 Unexpected keys: {unexpected_keys}")
+       state_dict = torch.load(weightspath, map_location=lambda storage, loc: storage, weights_only=True)
+       model = load_bisenet_state_dict(model, state_dict)
 
     elif args.model == 'ENet':
         state_dict = {k if k.startswith("module.") else "module." + k: v for k, v in state_dict.items()}
