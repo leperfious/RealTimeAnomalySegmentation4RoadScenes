@@ -71,14 +71,6 @@ def main(args):
         model = BiSeNet(NUM_CLASSES)
     else:
         model = ERFNet(NUM_CLASSES)
-    if args.pruned == True and args.pruning == 'global':
-        model = prune_and_return_model(model, 0.7)
-    elif args.pruned == True and args.pruning == 'local':
-        model = local_prune_and_return_model(model, 0.7)
-    elif args.quantize:
-        model = Net(NUM_CLASSES)
-        model = quantize_model(model, args, False)
-        print("Model quantized")
 
 
     #model = torch.nn.DataParallel(model)
