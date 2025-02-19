@@ -40,13 +40,13 @@ target_transform_cityscapes = Compose([
 ])
 
 input_transform_cityscapes_bisenet = Compose([
-    Resize((512,1024), Image.BILINEAR),
+    Resize((512,512), Image.BILINEAR),
     ToTensor(),
     Normalize(mean=torch.tensor([0.485, 0.456, 0.406]), std=torch.tensor([0.229, 0.224, 0.225])),
 ])
 
 target_transform_cityscapes_bisenet = Compose([
-    Resize((512,1024), Image.NEAREST),
+    Resize((512,512), Image.NEAREST),
     ToLabel(),
     Relabel(255, 19),   #ignore label to 19
 ])
@@ -82,10 +82,12 @@ def main(args):
 
     if(args.model == 'ENet'):
         model = ENet(NUM_CLASSES)
+
     elif(args.model == 'BiSeNet'):
-        model = BiSeNet(NUM_CLASSES)
         input_transform_cityscapes = input_transform_cityscapes_bisenet
         target_transform_cityscapes = target_transform_cityscapes_bisenet
+        model = BiSeNet(NUM_CLASSES)
+        
     else:
         model = ERFNet(NUM_CLASSES)
 
@@ -164,7 +166,7 @@ def main(args):
 
         # iouEvalVal.addBatch(anomaly_result.unsqueeze(1).data, labels)
         valid_mask = labels != 19
-        iouEvalVal.addBatch(anomaly_result.unsqueeze(1).data * valid_mask, labels * valid_mask)
+        iouEvalVal.addBatch(anomaly_result.unsqueeze(1) * valid_mask, labels * valid_mask)
 
 
         filenameSave = filename[0].split("leftImg8bit/")[1] 
@@ -223,9 +225,9 @@ def main(args):
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument('--loadDir', default="../trained_models/")
-    parser.add_argument('--loadWeights', default="erfnet_pretrained.pth")
-    parser.add_argument('--loadModel', default="erfnet.py")
+    parser.add_argument('--loadDir', default="../save/bisenet_training_19andvoid")
+    parser.add_argument('--loadWeights', default="best_model.pth")
+    parser.add_argument('--loadModel', default="bisenet.py")
     parser.add_argument('--subset', default="val")
     parser.add_argument('--datadir', default="/content/datasets/cityscapes")  # It needed to be corrected, i bring it from colab acc.
     parser.add_argument('--num-workers', type=int, default=4)
