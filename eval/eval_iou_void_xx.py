@@ -1,192 +1,194 @@
 # Code to calculate IoU (mean and per-class) in a dataset
-# Nov 2017
-# Eduardo Romera
+# FEB 2025
 #######################
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 import os
-import importlib
 import time
-from erfnet import ERFNet
-from enet import ENet
-from bisenet import BiSeNet
+
 from PIL import Image
 from argparse import ArgumentParser
 
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
-from torchvision.transforms import Compose, CenterCrop, Normalize, Resize
-from torchvision.transforms import ToTensor, ToPILImage
+from torchvision.transforms import Compose, Normalize, Resize, ToTensor
 
 from dataset import cityscapes
 from erfnet import ERFNet
-from transform import Relabel, ToLabel, Colorize
+from enet import ENet
+from bisenet import BiSeNet
+from transform import Relabel, ToLabel
 from iouEval import iouEval, getColorEntry
 
 NUM_CHANNELS = 3
 NUM_CLASSES = 20
 
-image_transform = ToPILImage()
+# Transformations for input and target images
 input_transform_cityscapes = Compose([
-    Resize(512, Image.BILINEAR),
+    Resize((512, 1024), Image.BILINEAR),
     ToTensor(),
-])
-target_transform_cityscapes = Compose([
-    Resize(512, Image.NEAREST),
-    ToLabel(),
-    Relabel(255, 19),   #ignore label to 19
+    Normalize(mean=torch.tensor([0.485, 0.456, 0.406]), std=torch.tensor([0.229, 0.224, 0.225])),
 ])
 
-def load_my_state_dict(model, state_dict, model_name):  #custom function to load model when not all dict elements
-        if(model_name == 'ERFNet'):
-            own_state = model.state_dict()
-            for name, param in state_dict.items():
-                if name not in own_state:
-                    if name.startswith("module."):
-                        own_state[name.split("module.")[-1]].copy_(param)
-                    else:
-                        print(name, " not loaded")
-                        continue
-                else:
-                    own_state[name].copy_(param)
+target_transform_cityscapes = Compose([
+    Resize((512, 1024), Image.NEAREST),
+    ToLabel(),
+    Relabel(255, 19),  # Ignore label mapped to 19
+])
+
+def load_my_state_dict(model, state_dict, model_name):
+    """ Custom function to load model weights and handle mismatches. """
+    own_state = model.state_dict()
+    for name, param in state_dict.items():
+        if name in own_state:
+            own_state[name].copy_(param)
         else:
-            model = model.load_state_dict(state_dict)
-        return model
+            print(f"⚠️ Warning: {name} not loaded (key mismatch)")
+    return model
 
 def main(args):
-
+    """ Main function for model evaluation and IoU computation. """
     
+    modelpath = os.path.join(args.loadDir, args.loadModel)
+    weightspath = os.path.join(args.loadDir, args.loadWeights)
 
-    modelpath = args.loadDir + args.loadModel
-    weightspath = args.loadDir + args.loadWeights
+    print(f"🔹 Loading model: {modelpath}")
+    print(f"🔹 Loading weights: {weightspath}")
 
-    print ("Loading model: " + modelpath)
-    print ("Loading weights: " + weightspath)
-    
-    if(args.model == 'ENet'):
+    # Select the model
+    if args.model == 'ENet':
         model = ENet(NUM_CLASSES)
-    elif(args.model == 'BiSeNet'):
+    elif args.model == 'BiSeNet':
         model = BiSeNet(NUM_CLASSES)
     else:
         model = ERFNet(NUM_CLASSES)
 
-
-    #model = torch.nn.DataParallel(model)
-    if (not args.cpu):
+    # Use DataParallel if running on GPU
+    if not args.cpu:
         model = torch.nn.DataParallel(model).cuda()
 
-    
-
+    # Load model weights and handle module prefix issues
     state_dict = torch.load(weightspath, map_location=lambda storage, loc: storage)
-    if(args.model == 'ENet' or args.model == 'BiSeNet'):
-        #print(state_dict)
+
+    if args.model == 'BiSeNet':
+        if any(k.startswith("module.") for k in state_dict.keys()):
+            print("⚠️ Removing 'module.' prefix from state_dict...")
+            state_dict = {k[7:]: v for k, v in state_dict.items()}  # Remove "module."
+        
+        missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
+        print(f"🔎 Missing keys: {missing_keys}")
+        print(f"🔎 Unexpected keys: {unexpected_keys}")
+
+    elif args.model == 'ENet':
         state_dict = {k if k.startswith("module.") else "module." + k: v for k, v in state_dict.items()}
-        model.load_state_dict(state_dict)
-    elif (args.quantize):
-        print("Load nothing")
-        # model = load_quant_dict(model, state_dict)
-        model.load_state_dict(state_dict)
+        model.load_state_dict(state_dict, strict=False)
     else:
         model = load_my_state_dict(model, state_dict, args.model)
-    #print(model)
-    print ("Model and weights LOADED successfully")
 
+    print("✅ Model and weights LOADED SUCCESSFULLY.")
 
+    # Model evaluation mode
     model.eval()
 
-    if(not os.path.exists(args.datadir)):
-        print ("Error: datadir could not be loaded")
+    if not os.path.exists(args.datadir):
+        print("❌ Error: datadir could not be loaded")
+        return
 
-
-    loader = DataLoader(cityscapes(args.datadir, input_transform_cityscapes, target_transform_cityscapes, subset=args.subset), num_workers=args.num_workers, batch_size=args.batch_size, shuffle=False)
-
+    # Load dataset
+    loader = DataLoader(cityscapes(args.datadir, input_transform_cityscapes, target_transform_cityscapes, subset=args.subset),
+                         num_workers=args.num_workers, batch_size=args.batch_size, shuffle=False)
 
     iouEvalVal = iouEval(NUM_CLASSES)
-
     start = time.time()
 
-    print(len(loader))
+    # Open results file
+    results_file = open("results_void_mIoU.txt", "a")
 
-    for step, (images, labels, filename, filenameGt) in enumerate(loader):
-        print(step)
-        if (not args.cpu):
+    for step, (images, labels, filename, _) in enumerate(loader):
+        if not args.cpu:
             images = images.cuda()
             labels = labels.cuda()
-        print(images.shape)
 
-        inputs = Variable(images)
         with torch.no_grad():
-            outputs = model(inputs)
-            print("Hello there?")
-        print("Obtained output")
+            outputs = model(Variable(images))
 
-        if(model == 'Enet'):
-            outputs = torch.roll(outputs, -1, 1)
-        
-
-        if(model != 'BiSeNet'):
-          iouEvalVal.addBatch(outputs.max(1)[1].unsqueeze(1).data, labels)
+        # Handle model-specific output changes
+        if args.model == 'BiSeNet':
+            new_outputs = outputs[0]
+        elif args.model == 'ENet':
+            new_outputs = torch.roll(outputs, -1, 1)
         else:
-          iouEvalVal.addBatch(outputs[0].max(1)[1].unsqueeze(1).data, labels)
-        
+            new_outputs = outputs
+
+        # Apply softmax and anomaly detection method
+        if args.method == 'msp':
+            softmax_probability = F.softmax(new_outputs, dim=1)
+            anomaly_result = torch.argmax(softmax_probability, dim=1)
+        elif args.method == 'max_logit':
+            anomaly_result = torch.argmax(new_outputs, dim=1)
+        elif args.method == 'max_entropy':
+            softmax_probability = F.softmax(new_outputs, dim=1)
+            log_softmax_probs = F.log_softmax(new_outputs, dim=1)
+            entropy = -torch.sum(softmax_probability * log_softmax_probs, dim=1)
+            anomaly_result = torch.argmax(entropy, dim=1)
+
+        # Mask void class before IoU computation
+        valid_mask = labels != 19
+        iouEvalVal.addBatch(anomaly_result.unsqueeze(1).data * valid_mask, labels * valid_mask)
+
         filenameSave = filename[0].split("leftImg8bit/")[1]
-
         print(step, filenameSave)
+        results_file.write(f"Step {step}, File: {filenameSave}\n")
 
+    # Compute IoU metrics
     iouVal, iou_classes = iouEvalVal.getIoU()
+    iou_classes_str = ['{:0.2f}'.format(iou * 100) for iou in iou_classes]
 
-    iou_classes_str = []
-    
-    for i in range(iou_classes.size(0)):
-        #iouStr = getColorEntry(iou_classes[i])+'{:0.2f}'.format(iou_classes[i]*100) + '\033[0m'
-        iouStr = '{:0.2f}'.format(iou_classes[i]*100)
-        iou_classes_str.append(iouStr)
+    # Debugging outputs
+    print(f"Model: {args.model}")
+    print(f"Output shape: {new_outputs.shape}")
+    print(f"Min/Max values: {new_outputs.min().item()}, {new_outputs.max().item()}")
+    print(f"Unique predicted classes: {torch.unique(anomaly_result)}")
+    print(f"Ground truth unique classes: {torch.unique(labels)}")
 
-    if not os.path.exists('voidIoUResults.txt'):
-        open('voidIoUResults.txt', 'w').close()
-    with open('voidIoUResults.txt', 'a') as f:
-        print("---------------------------------------", file=f)
-        print("Model", args.model, "without pruning ", "Took", time.time() - start, "seconds", file=f)
-        print("=======================================", file=f)
-        # print("TOTAL IOU: ", iou * 100, "%", file=f)
-        print("Per-Class IoU:", file=f)
-        print(iou_classes_str[0], "Road", file=f)
-        print(iou_classes_str[1], "sidewalk", file=f)
-        print(iou_classes_str[2], "building", file=f)
-        print(iou_classes_str[3], "wall", file=f)
-        print(iou_classes_str[4], "fence", file=f)
-        print(iou_classes_str[5], "pole", file=f)
-        print(iou_classes_str[6], "traffic light", file=f)
-        print(iou_classes_str[7], "traffic sign", file=f)
-        print(iou_classes_str[8], "vegetation", file=f)
-        print(iou_classes_str[9], "terrain", file=f)
-        print(iou_classes_str[10], "sky", file=f)
-        print(iou_classes_str[11], "person", file=f)
-        print(iou_classes_str[12], "rider", file=f)
-        print(iou_classes_str[13], "car", file=f)
-        print(iou_classes_str[14], "truck", file=f)
-        print(iou_classes_str[15], "bus", file=f)
-        print(iou_classes_str[16], "train", file=f)
-        print(iou_classes_str[17], "motorcycle", file=f)
-        print(iou_classes_str[18], "bicycle", file=f)
-        print("=======================================", file=f)
-        # iouStr = getColorEntry(iouVal)+'{:0.2f}'.format(iouVal*100) + '\033[0m'
-        iouStr = '{:0.2f}'.format(iouVal * 100)
-        print("MEAN IoU: ", iouStr, "%", file=f)
+    # Print and save results
+    print("---------------------------------------")
+    print("Method used:", args.method)
+    print("Took", time.time() - start, "seconds")
+    print("======================================")
+    print("Per-Class IoU:")
+    results_file.write(f"Method used: {args.method}\n")
+    results_file.write("Per-Class IoU:\n")
 
-    #file.close()
+    class_labels = [
+        "Road", "Sidewalk", "Building", "Wall", "Fence", "Pole",
+        "Traffic Light", "Traffic Sign", "Vegetation", "Terrain", "Sky",
+        "Person", "Rider", "Car", "Truck", "Bus", "Train", "Motorcycle", "Bicycle"
+    ]
+
+    for i, label in enumerate(class_labels):
+        print(iou_classes_str[i], label)
+        results_file.write(f"{label}: {iou_classes[i] * 100:.2f}%\n")
+
+    print("======================================")
+    print("MEAN IoU:", f'{iouVal * 100:.2f}', "%")
+    results_file.write(f"MEAN IoU: {iouVal * 100:.2f}%\n")
+
+    results_file.close()
+
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--loadDir', default="../trained_models/")
     parser.add_argument('--loadWeights', default="erfnet_pretrained.pth")
     parser.add_argument('--loadModel', default="erfnet.py")
     parser.add_argument('--subset', default="val")
-    parser.add_argument('--datadir', default="/content/datasets/cityscapes")  # It needed to be corrected, i bring it from colab acc.
+    parser.add_argument('--datadir', default="/content/datasets/cityscapes")
     parser.add_argument('--num-workers', type=int, default=4)
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--cpu', action='store_true')
-    parser.add_argument('--method', default='msp', choices=['msp', 'max_logit', 'max_entropy'], help='Method for anomaly detection')
-    parser.add_argument('--model', default ='ERFNet', choices=['ERFNet', 'ENet', 'BiSeNet'])
+    parser.add_argument('--method', default='msp', choices=['msp', 'max_logit', 'max_entropy'], help='Anomaly detection method')
+    parser.add_argument('--model', default='ERFNet', choices=['ERFNet', 'ENet', 'BiSeNet'])
+
     main(parser.parse_args())
