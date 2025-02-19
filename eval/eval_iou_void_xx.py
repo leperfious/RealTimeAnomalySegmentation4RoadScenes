@@ -15,8 +15,6 @@ from enet import ENet
 from bisenet import BiSeNet
 from PIL import Image
 from argparse import ArgumentParser
-from erfnet_pruned import prune_and_return_model, local_prune_and_return_model
-from quantization import quantize_model
 
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
