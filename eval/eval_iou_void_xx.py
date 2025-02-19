@@ -179,9 +179,9 @@ def main(args):
     #file.close()
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument('--loadDir', default="../save/bisenet_training_19andvoid/")
-    parser.add_argument('--loadWeights', default="model_best.pth")
-    parser.add_argument('--loadModel', default="bisenet.py")
+    parser.add_argument('--loadDir', default="../trained_models/")
+    parser.add_argument('--loadWeights', default="erfnet_pretrained.pth")
+    parser.add_argument('--loadModel', default="erfnet.py")
     parser.add_argument('--subset', default="val")
     parser.add_argument('--datadir', default="/content/datasets/cityscapes")  # It needed to be corrected, i bring it from colab acc.
     parser.add_argument('--num-workers', type=int, default=4)
