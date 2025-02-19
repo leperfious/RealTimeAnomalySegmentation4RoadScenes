@@ -148,14 +148,7 @@ def main(args):
         open('voidIoUResults.txt', 'w').close()
     with open('voidIoUResults.txt', 'a') as f:
         print("---------------------------------------", file=f)
-        if args.pruned and args.pruning == 'global':
-          print("Model", args.model, "with global pruning", "Took", time.time() - start, "seconds", file=f)
-        elif args.pruned and args.pruning == 'local':
-          print("Model", args.model, "with local pruning ", "Took", time.time() - start, "seconds", file=f)
-        elif args.quantize:
-            print("Model", args.model, " with quantization ", "Took", time.time() - start, "seconds", file=f)
-        else:
-          print("Model", args.model, "without pruning ", "Took", time.time() - start, "seconds", file=f)
+        print("Model", args.model, "without pruning ", "Took", time.time() - start, "seconds", file=f)
         print("=======================================", file=f)
         # print("TOTAL IOU: ", iou * 100, "%", file=f)
         print("Per-Class IoU:", file=f)
@@ -186,8 +179,8 @@ def main(args):
     #file.close()
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument('--loadDir', default="../save/bisenet_training_19andvoid")
-    parser.add_argument('--loadWeights', default="best_model.pth")
+    parser.add_argument('--loadDir', default="../save/bisenet_training_19andvoid/")
+    parser.add_argument('--loadWeights', default="model_best.pth")
     parser.add_argument('--loadModel', default="bisenet.py")
     parser.add_argument('--subset', default="val")
     parser.add_argument('--datadir', default="/content/datasets/cityscapes")  # It needed to be corrected, i bring it from colab acc.
