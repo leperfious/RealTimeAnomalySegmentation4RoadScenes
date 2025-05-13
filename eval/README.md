@@ -20,8 +20,8 @@ This code can be used to calculate the IoU (mean and per-class) with baseliens M
 
 **Examples:**
 ```
-python eval_iou.py --datadir /content/datasets/cityscapes/ --subset val --method msp
-python eval_iou.py --loadDir /save/bisenet_training/ --loadWeight model_best.pth --loadModel bisenetv1.py --datadir /content/datasets/cityscapes/ --subset val --method msp
+python eval_iou.py --loadDir ..\trained_models --loadWeights erfnet_pretrained.pth --loadModel erfnet.py --subset val --datadir ..\datasets\cityscapes --method msp
+
 ```
 
 

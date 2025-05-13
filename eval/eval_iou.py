@@ -107,16 +107,36 @@ def main(args):
 
         # ________________________ msp, max_logit, max_entropy _______________________ starts
 
+        # if args.method == 'msp':
+        #     softmax_probability = F.softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
+        #     anomaly_result = torch.argmax(softmax_probability, dim=1).unsqueeze(1).data
+        # elif args.method == 'max_logit':
+        #     anomaly_result = torch.argmax(outputs, dim=1).unsqueeze(1).data  # Changed from dim=1 to dim=0
+        # elif args.method == 'max_entropy':
+        #     softmax_probability = F.softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
+        #     log_softmax_probs = F.log_softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
+        #     entropy = -torch.sum(softmax_probability * log_softmax_probs, dim=1)  # Changed from dim=1 to dim=0
+        #     anomaly_result = torch.argmax(entropy, dim=1).unsqueeze(1).data  # Changed from dim=1 to dim=0
+        
+        # ________________________ msp, max_logit, max_entropy _______________________ starts
+
         if args.method == 'msp':
-            softmax_probability = F.softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
-            anomaly_result = torch.argmax(softmax_probability, dim=1).unsqueeze(1).data
+            softmax_probability = F.softmax(outputs, dim=1)
+            anomaly_score = 1.0 - torch.max(softmax_probability, dim=1)[0]
+            anomaly_result = torch.argmax(softmax_probability, dim=1).unsqueeze(1).data  # use for mIoU
+
         elif args.method == 'max_logit':
-            anomaly_result = torch.argmax(outputs, dim=1).unsqueeze(1).data  # Changed from dim=1 to dim=0
+            anomaly_score = -torch.max(outputs, dim=1)[0]
+            anomaly_result = torch.argmax(outputs, dim=1).unsqueeze(1).data  # use for mIoU
+
         elif args.method == 'max_entropy':
-            softmax_probability = F.softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
-            log_softmax_probs = F.log_softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
-            entropy = -torch.sum(softmax_probability * log_softmax_probs, dim=1)  # Changed from dim=1 to dim=0
-            anomaly_result = torch.argmax(entropy, dim=1).unsqueeze(1).data  # Changed from dim=1 to dim=0
+            softmax_probability = F.softmax(outputs, dim=1)
+            log_softmax_probs = F.log_softmax(outputs, dim=1)
+            entropy = -torch.sum(softmax_probability * log_softmax_probs, dim=1)
+            anomaly_score = entropy
+            anomaly_result = torch.argmax(softmax_probability, dim=1).unsqueeze(1).data  # use for mIoU
+
+        # anomaly_score will be used to calculate OOD
 
         # ________________________ msp, max_logit, max_entropy _______________________ ends
 
@@ -173,7 +193,7 @@ if __name__ == '__main__':
     parser.add_argument('--loadWeights', default="erfnet_pretrained.pth")
     parser.add_argument('--loadModel', default="erfnet.py")
     parser.add_argument('--subset', default="val")
-    parser.add_argument('--datadir', default="/content/datasets/cityscapes")  # It needed to be corrected, i bring it from colab acc.
+    parser.add_argument('--datadir', default="/datasets/cityscapes")  # It needed to be corrected, i do locally here
     parser.add_argument('--num-workers', type=int, default=4)
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--cpu', action='store_true')
