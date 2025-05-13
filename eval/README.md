@@ -2,9 +2,7 @@
 
 Currently there are 7 usable functions to evaluate stuff:
 - **[eval_iou.py](/eval/eval_iou.py)**
-- **[eval_iou_temp.py](/eval/eval_iou_temp.py)**
 - **[evalAnomaly.py](/eval/evalAnomaly.py)**
-- **[evalAnomaly_temp.py](/eval/evalAnomaly_temp.py)**
 - **[eval_cityscapes_color.py](/eval/eval_cityscapes_color.py)**
 - **[eval_cityscapes_server.py](/eval/eval_cityscapes_server.py)**
 - **[eval_forwardTime.py](/eval/eval_forwardTime.py)**
@@ -13,10 +11,11 @@ Currently there are 7 usable functions to evaluate stuff:
 
 ## **[eval_iou.py](/eval/eval_iou.py)**
 
-This code can be used to calculate the IoU (mean and per-class) with baseliens MSP, MaxLogit, MaxEntropy in a subset of images with labels available, like Cityscapes val/train sets. It can be used for pretrained ERFNet, and trained BiSeNet, ENet, ERFNet on Cityscapes with 19 known classes and one void class.
+This code can be used to calculate the IoU (mean and per-class) with baseliens MSP, MaxLogit, MaxEntropy in a subset of images with labels available, like Cityscapes val/train sets. Here we can choose temperature value to apply temperature scaling. It can be used for pretrained ERFNet, and trained BiSeNet, ENet, ERFNet on Cityscapes with 19 known classes and one void class.
 
 **Options:** Specify the Cityscapes folder path with '--datadir' option. Select the cityscapes subset with '--subset' ('val' or 'train'). For other options check the bottom side of the file.
 **Networks:** Specify the network folder path with '--loadDir' option, weights with '--loadWeight', and model with 'loadModel'
+**Temperature:** Specify temperature grade to apply by adding value to '--temperature '
 
 **Examples:**
 ```
@@ -24,49 +23,24 @@ python eval_iou.py --loadDir ..\trained_models --loadWeights erfnet_pretrained.p
 python eval_iou.py --loadDir ..\trained_models --loadWeights erfnet_pretrained.pth --loadModel erfnet.py --subset val --datadir ..\datasets\cityscapes --method max_logit
 python eval_iou.py --loadDir ..\trained_models --loadWeights erfnet_pretrained.pth --loadModel erfnet.py --subset val --datadir ..\datasets\cityscapes --method max_entropy
 
+python eval_iou.py --temperature 2 --method msp
+
 ```
-
-
-## **[eval_iou_temp.py](/eval/eval_iou_temp.py)**
-
-This code can be used to calculate the IoU (mean and per-class) with baseliens MSP, MaxLogit, MaxEntropy in a subset of images with labels available, like Cityscapes val/train sets. Here we can choose temperature value to apply temperature scaling. It can be used for pretrained ERFNet, and trained BiSeNet, ENet, ERFNet on Cityscapes with 19 known classes and one void class.
-
-**Options:** Specify the Cityscapes folder path with '--datadir' option. Select the cityscapes subset with '--subset' ('val' or 'train'). For other options check the bottom side of the file.
-**Networks:** Specify the network folder path with '--loadDir=' option, weights with '--loadWeight=', and model with 'loadModel='
-**Temperature:** Specify temperature grade to apply by adding value to '--temperature='
-
-**Examples:**
-```
-python eval_iou.py --temperature=1.6 --datadir /content/datasets/cityscapes/ --subset val --method msp
-```
-
 
 
 ## **[evalAnomaly.py](/eval/evalAnomaly.py)**
 
 This code can be used to produce anomaly segmentation results on  anomaly metrics (FPR95, AuPRC) using Validation Datasets that mentioned.
+**Temperature:** Specify temperature grade to apply by adding value to '--temperature '
 
 **Examples:**
 ```
 python evalAnomaly.py --method msp
+python evalAnomaly.py --temperature 2 --method msp
 python evalAnomaly.py --method max_logit
 python evalAnomaly.py --method max_entropy
 
 ```
-
-## **[evalAnomaly_temp.py](/eval/evalAnomaly_temp.py)**
-
-This code can be used to produce anomaly segmentation results on  anomaly metrics (FPR95, AuPRC) using Validation Datasets that mentioned.
-
-**Temperature:** Specify temperature grade to apply by adding value to '--temperature='
-
-**Examples:**
-```
-python evalAnomaly.py --input /content/datasets/validation_dataset --temperature=1.6 --subset val --method msp
-
-
-```
-
 
 
 ## **[eval_cityscapes_color.py](/eval/eval_cityscapes_color.py)**
