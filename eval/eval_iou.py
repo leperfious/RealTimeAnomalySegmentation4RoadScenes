@@ -1,8 +1,3 @@
-# Code to calculate IoU (mean and per-class) in a dataset
-# Nov 2017
-# Eduardo Romera
-#######################
-
 import numpy as np
 import torch
 import torch.nn.functional as F  # msp, maxlogit, maxentropy 
@@ -95,7 +90,7 @@ def main(args):
     start = time.time()
 
     # To write results tab1 to file results1_mIoU.txt
-    results_file = open("results1_mIoU.txt", "a")
+    results_file = open("results_mIoU.txt", "a")
 
     for step, (images, labels, filename, _ ) in enumerate(loader):
         if not args.cpu:
@@ -109,7 +104,7 @@ def main(args):
         # size is 512x1024
 
         if args.method == 'msp':
-            softmax_probability = F.softmax(outputs, dim=1)
+            softmax_probability = F.softmax(outputs/args.temperature, dim=1)
             anomaly_score = 1.0 - torch.max(softmax_probability, dim=1)[0]
             anomaly_result = torch.argmax(softmax_probability, dim=1).unsqueeze(1).data  # use for mIoU
 
@@ -145,10 +140,12 @@ def main(args):
 
     print("---------------------------------------")
     print("Method used:", args.method)
+    print("Temperature scale used:", args.temperature)
     print("Took", time.time() - start, "seconds")
     print("======================================")
     print("Per-Class IoU:")
     results_file.write(f"Method used: {args.method}\n")
+    results_file.write(f"Temperature scale used: {args.temperature}\n")
     results_file.write("Per-Class IoU:\n")
     for i, label in enumerate(["Road", 
                                "Sidewalk", 
@@ -182,6 +179,7 @@ if __name__ == '__main__':
     parser.add_argument('--loadDir', default="../trained_models/")
     parser.add_argument('--loadWeights', default="erfnet_pretrained.pth")
     parser.add_argument('--loadModel', default="erfnet.py")
+    parser.add_argument('--temperature', type=float, default=1) #  for the temperature scaling, default is 1
     parser.add_argument('--subset', default="val")
     parser.add_argument('--datadir', default="../datasets/cityscapes")  # It needed to be corrected, i do locally here
     parser.add_argument('--num-workers', type=int, default=4)
