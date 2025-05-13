@@ -39,10 +39,12 @@ For instructions, please refer to the README in each folder:
     - [**Road Anomaly**](https://www.epfl.ch/labs/cvlab/data/road-anomaly/)
         - **RoadAnomaly**: images are jpg, labels' masks are png
 
+- **On local**: Datasets are in the folder [validation_dataset](/datasets/validation_dataset/), [cityscapes](/datasets/cityscapes/)
+
 
 ## Requirements:
 
-* [**Python 3.6**](https://www.python.org/): If you don't have Python3.13.2 in your system, I recommend installing it with [Anaconda](https://www.anaconda.com/download/#linux)
-* [**PyTorch**](http://pytorch.org/): Make sure to install the Pytorch version for Python 3.13 with CUDA support (code will be tested for CUDA 12.8). 
+* [**Python 3.6**](https://www.python.org/): If you don't have Python 3.13.2 in your system, I recommend installing it with [Anaconda](https://www.anaconda.com/download/#linux)
+* [**PyTorch**](http://pytorch.org/): Make sure to install the Pytorch version for Python 3.13.2 with CUDA support (code will be tested with CUDA 12.8). 
 * **Additional Python packages**: numpy, matplotlib, Pillow, torchvision, visdom, odd_metrics, gdown, cityscapesscripts (for creating train id label img) (optional for --visualize flag)
 * **For intalling**: pip install numpy matplotlib pillow torchvision visdom odd_metrics gdown cityscapesscripts
