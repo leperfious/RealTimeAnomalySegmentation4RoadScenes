@@ -142,44 +142,42 @@ def main():
             image = input_transform((Image.open(path).convert('RGB'))).unsqueeze(0).float() #  I don't use ToTensor() because we will do resize, data augmentation etc.
             if not args.cpu:
                 image = image.cuda()
-
+                
             with torch.no_grad():
-                outputs = model(image).squeeze(0)
+                outputs = model(image)  # [1, C, H, W]
+
 
             # ________________________ msp, max_logit, max_entropy _______________________ starts
 
-            # if args.method == 'msp':
-            #     softmax_probability = F.softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
-            #     anomaly_result = torch.argmax(softmax_probability, dim=1).unsqueeze(1).data
-            # elif args.method == 'max_logit':
-            #     anomaly_result = torch.argmax(outputs, dim=1).unsqueeze(1).data  # Changed from dim=1 to dim=0
-            # elif args.method == 'max_entropy':
-            #     softmax_probability = F.softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
-            #     log_softmax_probs = F.log_softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
-            #     entropy = -torch.sum(softmax_probability * log_softmax_probs, dim=1)  # Changed from dim=1 to dim=0
-            #     anomaly_result = torch.argmax(entropy, dim=1).unsqueeze(1).data  # Changed from dim=1 to dim=0
             
             
 
             if args.method == 'msp':
-                softmax_probability = F.softmax(outputs, dim=0)
-                anomaly_score = 1.0 - torch.max(softmax_probability, dim=0)[0]
-                anomaly_result = torch.argmax(softmax_probability, dim=1).unsqueeze(1).data  # using for mIoU
+                softmax_probability = F.softmax(outputs, dim=1)  # class-wise softmax
+                anomaly_score = 1.0 - torch.max(softmax_probability, dim=1)[0]  # [1, H, W]
+                anomaly_result = torch.argmax(softmax_probability, dim=1).unsqueeze(1).data  # [1, 1, H, W]
 
             elif args.method == 'max_logit':
-                anomaly_score = -torch.max(outputs, dim=0)[0]
-                anomaly_result = torch.argmax(outputs, dim=1).unsqueeze(1).data  # using for mIoU
+                anomaly_score = -torch.max(outputs, dim=1)[0]  # [1, H, W]
+                anomaly_result = torch.argmax(outputs, dim=1).unsqueeze(1).data  # [1, 1, H, W]
 
             elif args.method == 'max_entropy':
-                softmax_probability = F.softmax(outputs, dim=0)
-                log_softmax_probs = F.log_softmax(outputs, dim=0)
-                entropy = -torch.sum(softmax_probability * log_softmax_probs, dim=0)
+                softmax_probability = F.softmax(outputs, dim=1)
+                log_softmax_probs = F.log_softmax(outputs, dim=1)
+                entropy = -torch.sum(softmax_probability * log_softmax_probs, dim=1)  # [1, H, W]
                 anomaly_score = entropy
-                anomaly_result = torch.argmax(softmax_probability, dim=1).unsqueeze(1).data  # using for mIoU
+                anomaly_result = torch.argmax(softmax_probability, dim=1).unsqueeze(1).data  # [1, 1, H, W]
 
+            # Resize anomaly_score to match GT mask resolution
             # anomaly_score will be used to calculate OOD
+            
+            anomaly_score = F.interpolate(
+                anomaly_score.unsqueeze(1),  # [1, 1, H, W]
+                size=(512, 1024),            # or ood_gts.shape if dynamic
+                mode='bilinear',
+                align_corners=False
+            ).squeeze().data.cpu().numpy()  # → [H, W]
 
-            anomaly_score = anomaly_score.data.cpu().numpy()
 
 
             # ________________________ msp, max_logit, max_entropy _______________________ ends

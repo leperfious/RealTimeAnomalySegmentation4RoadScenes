@@ -98,27 +98,15 @@ def main(args):
     results_file = open("results1_mIoU.txt", "a")
 
     for step, (images, labels, filename, _ ) in enumerate(loader):
-        if (not args.cpu):
+        if not args.cpu:
             images = images.cuda()
             labels = labels.cuda()
 
         with torch.no_grad():
-            outputs = model(Variable(images))
+            outputs = model(images)
 
         # ________________________ msp, max_logit, max_entropy _______________________ starts
-
-        # if args.method == 'msp':
-        #     softmax_probability = F.softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
-        #     anomaly_result = torch.argmax(softmax_probability, dim=1).unsqueeze(1).data
-        # elif args.method == 'max_logit':
-        #     anomaly_result = torch.argmax(outputs, dim=1).unsqueeze(1).data  # Changed from dim=1 to dim=0
-        # elif args.method == 'max_entropy':
-        #     softmax_probability = F.softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
-        #     log_softmax_probs = F.log_softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
-        #     entropy = -torch.sum(softmax_probability * log_softmax_probs, dim=1)  # Changed from dim=1 to dim=0
-        #     anomaly_result = torch.argmax(entropy, dim=1).unsqueeze(1).data  # Changed from dim=1 to dim=0
-        
-        # ________________________ msp, max_logit, max_entropy _______________________ starts
+        # size is 512x1024
 
         if args.method == 'msp':
             softmax_probability = F.softmax(outputs, dim=1)
@@ -137,6 +125,8 @@ def main(args):
             anomaly_result = torch.argmax(softmax_probability, dim=1).unsqueeze(1).data  # use for mIoU
 
         # anomaly_score will be used to calculate OOD
+
+
 
         # ________________________ msp, max_logit, max_entropy _______________________ ends
 
