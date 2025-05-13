@@ -74,6 +74,7 @@ def main():
     parser.add_argument('--loadWeights', default="erfnet_pretrained.pth")
     parser.add_argument('--loadModel', default="erfnet.py")
     parser.add_argument('--method', type = str, default='msp', choices=['msp','max_logit', 'max_entropy'], help='Method for anomaly detection') #  check this one **
+    parser.add_argument('--temperature', type=float, default=1) #  for the temperature scaling, default is 1
     parser.add_argument('--subset', default="val")  #can be val or train (must have labels)
     parser.add_argument('--datadir', default="../datasets/cityscapes")  # ***
     parser.add_argument('--num-workers', type=int, default=4)
@@ -153,7 +154,7 @@ def main():
             
 
             if args.method == 'msp':
-                softmax_probability = F.softmax(outputs, dim=1)  # class-wise softmax
+                softmax_probability = F.softmax(outputs/args.temperature, dim=1)  # class-wise softmax
                 anomaly_score = 1.0 - torch.max(softmax_probability, dim=1)[0]  # [1, H, W]
                 anomaly_result = torch.argmax(softmax_probability, dim=1).unsqueeze(1).data  # [1, 1, H, W]
 
@@ -279,12 +280,13 @@ def main():
         dataset_name = dataset_path.split("/")[-3]
         # print(f'Model: {modelname.upper()}')
         print(f'Method: {args.method}')
+        print(f'Temperature: {args.temperature}')
         print(f'Dataset: {dataset_name}')
         print(f'AUPRC score: {round(prc_auc*100.0, 3)}')
         print(f'FPR@TPR95: {round(fpr*100.0, 3)}')
 
         file.write(
-            f'Method: {args.method}     Dataset: {dataset_name}   AUPRC score: {round(prc_auc * 100.0, 3)}   FPR@TPR95: {round(fpr * 100.0, 3)}\n'
+            f'Method: {args.method}      Temperature: {args.temperature}       Dataset: {dataset_name}   AUPRC score: {round(prc_auc * 100.0, 3)}   FPR@TPR95: {round(fpr * 100.0, 3)}\n'
         )
 
     file.close()
