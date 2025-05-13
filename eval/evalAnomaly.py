@@ -2,6 +2,7 @@ import os
 # import cv2 # to use it, pip install opencv-python
 import glob
 import torch
+import torch.nn.functional as F
 import random
 
 from PIL import Image
@@ -68,13 +69,13 @@ def load_my_state_dict(model, state_dict):  #custom function to load model when 
 def main():
     parser = ArgumentParser()
 
-    parser.add_argument('--input', type=str, default='/content/datasets/validation_dataset', help='Root directory of the datasets')
+    parser.add_argument('--input', type=str, default='../datasets/validation_dataset', help='Root directory of the datasets')
     parser.add_argument('--loadDir',default="../trained_models/")
     parser.add_argument('--loadWeights', default="erfnet_pretrained.pth")
     parser.add_argument('--loadModel', default="erfnet.py")
     parser.add_argument('--method', type = str, default='msp', choices=['msp','max_logit', 'max_entropy'], help='Method for anomaly detection') #  check this one **
     parser.add_argument('--subset', default="val")  #can be val or train (must have labels)
-    parser.add_argument('--datadir', default="/content/datasets/cityscapes")  # ***
+    parser.add_argument('--datadir', default="../datasets/cityscapes")  # ***
     parser.add_argument('--num-workers', type=int, default=4)
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--cpu', action='store_true')
@@ -118,11 +119,11 @@ def main():
     model.eval() #  starts evaluation **
 
     datasets = [
-        "/content/datasets/validation_dataset/FS_LostFound_full/images/*.png",
-        "/content/datasets/validation_dataset/fs_static/images/*.jpg",
-        "/content/datasets/validation_dataset/RoadAnomaly/images/*.jpg",
-        "/content/datasets/validation_dataset/RoadAnomaly21/images/*.png",
-        "/content/datasets/validation_dataset/RoadObsticle21/images/*.webp"
+        "../datasets/validation_dataset/FS_LostFound_full/images/*.png",
+        "../datasets/validation_dataset/fs_static/images/*.jpg",
+        "../datasets/validation_dataset/RoadAnomaly/images/*.jpg",
+        "../datasets/validation_dataset/RoadAnomaly21/images/*.png",
+        "../datasets/validation_dataset/RoadObsticle21/images/*.webp"
     ]
 
     for dataset_path in datasets:
@@ -147,16 +148,36 @@ def main():
 
             # ________________________ msp, max_logit, max_entropy _______________________ starts
 
+            # if args.method == 'msp':
+            #     softmax_probability = F.softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
+            #     anomaly_result = torch.argmax(softmax_probability, dim=1).unsqueeze(1).data
+            # elif args.method == 'max_logit':
+            #     anomaly_result = torch.argmax(outputs, dim=1).unsqueeze(1).data  # Changed from dim=1 to dim=0
+            # elif args.method == 'max_entropy':
+            #     softmax_probability = F.softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
+            #     log_softmax_probs = F.log_softmax(outputs, dim=1)  # Changed from dim=1 to dim=0
+            #     entropy = -torch.sum(softmax_probability * log_softmax_probs, dim=1)  # Changed from dim=1 to dim=0
+            #     anomaly_result = torch.argmax(entropy, dim=1).unsqueeze(1).data  # Changed from dim=1 to dim=0
+            
+            
+
             if args.method == 'msp':
-                softmax_probability = torch.nn.functional.softmax(outputs, dim=0)
+                softmax_probability = F.softmax(outputs, dim=0)
                 anomaly_score = 1.0 - torch.max(softmax_probability, dim=0)[0]
+                anomaly_result = torch.argmax(softmax_probability, dim=1).unsqueeze(1).data  # using for mIoU
+
             elif args.method == 'max_logit':
                 anomaly_score = -torch.max(outputs, dim=0)[0]
+                anomaly_result = torch.argmax(outputs, dim=1).unsqueeze(1).data  # using for mIoU
+
             elif args.method == 'max_entropy':
-                softmax_probability = torch.nn.functional.softmax(outputs, dim=0)
-                log_softmax_probs = torch.nn.functional.log_softmax(outputs, dim=0)
+                softmax_probability = F.softmax(outputs, dim=0)
+                log_softmax_probs = F.log_softmax(outputs, dim=0)
                 entropy = -torch.sum(softmax_probability * log_softmax_probs, dim=0)
                 anomaly_score = entropy
+                anomaly_result = torch.argmax(softmax_probability, dim=1).unsqueeze(1).data  # using for mIoU
+
+            # anomaly_score will be used to calculate OOD
 
             anomaly_score = anomaly_score.data.cpu().numpy()
 
@@ -248,6 +269,14 @@ def main():
 
         prc_auc = average_precision_score(val_label, val_out)
         fpr = fpr_at_95_tpr(val_out, val_label)
+        
+        # if len(np.unique(val_label)) < 2:
+        #     prc_auc = np.nan
+        #     fpr = np.nan
+        # else:
+        #     prc_auc = average_precision_score(val_label, val_out)
+        #     fpr = fpr_at_95_tpr(val_out, val_label)
+
 
         dataset_name = dataset_path.split("/")[-3]
         # print(f'Model: {modelname.upper()}')

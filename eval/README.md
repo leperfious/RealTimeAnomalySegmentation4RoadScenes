@@ -21,6 +21,8 @@ This code can be used to calculate the IoU (mean and per-class) with baseliens M
 **Examples:**
 ```
 python eval_iou.py --loadDir ..\trained_models --loadWeights erfnet_pretrained.pth --loadModel erfnet.py --subset val --datadir ..\datasets\cityscapes --method msp
+python eval_iou.py --loadDir ..\trained_models --loadWeights erfnet_pretrained.pth --loadModel erfnet.py --subset val --datadir ..\datasets\cityscapes --method max_logit
+python eval_iou.py --loadDir ..\trained_models --loadWeights erfnet_pretrained.pth --loadModel erfnet.py --subset val --datadir ..\datasets\cityscapes --method max_entropy
 
 ```
 
@@ -46,8 +48,9 @@ This code can be used to produce anomaly segmentation results on  anomaly metric
 
 **Examples:**
 ```
-python evalAnomaly.py --input /content/datasets/validation_dataset --subset val --method msp
-python evalAnomaly.py --loadDir /save/bisenet_training/ --loadWeight model_best.pth --loadModel bisenetv1.py --datadir /content/datasets/cityscapes/ --subset val --method msp
+python evalAnomaly.py --method msp
+python evalAnomaly.py --method max_logit
+python evalAnomaly.py --method max_entropy
 
 ```
 
