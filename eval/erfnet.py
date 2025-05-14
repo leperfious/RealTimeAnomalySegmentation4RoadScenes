@@ -1,4 +1,4 @@
-# ERFNET full network definition for Pytorch
+# ERFNet full model definition for Pytorch
 # Sept 2017
 # Eduardo Romera
 #######################
@@ -7,7 +7,6 @@ import torch
 import torch.nn as nn
 import torch.nn.init as init
 import torch.nn.functional as F
-
 
 class DownsamplerBlock (nn.Module):
     def __init__(self, ninput, noutput):
@@ -71,17 +70,17 @@ class Encoder(nn.Module):
         self.layers.append(DownsamplerBlock(16,64))
 
         for x in range(0, 5):    #5 times
-           self.layers.append(non_bottleneck_1d(64, 0.1, 1))  
+           self.layers.append(non_bottleneck_1d(64, 0.03, 1)) 
 
         self.layers.append(DownsamplerBlock(64,128))
 
         for x in range(0, 2):    #2 times
-            self.layers.append(non_bottleneck_1d(128, 0.1, 2))
-            self.layers.append(non_bottleneck_1d(128, 0.1, 4))
-            self.layers.append(non_bottleneck_1d(128, 0.1, 8))
-            self.layers.append(non_bottleneck_1d(128, 0.1, 16))
+            self.layers.append(non_bottleneck_1d(128, 0.3, 2))
+            self.layers.append(non_bottleneck_1d(128, 0.3, 4))
+            self.layers.append(non_bottleneck_1d(128, 0.3, 8))
+            self.layers.append(non_bottleneck_1d(128, 0.3, 16))
 
-        #only for encoder mode:
+        #Only in encoder mode:
         self.output_conv = nn.Conv2d(128, num_classes, 1, stride=1, padding=0, bias=True)
 
     def forward(self, input, predict=False):
@@ -133,8 +132,8 @@ class Decoder (nn.Module):
 
         return output
 
-
-class ERFNet(nn.Module):
+#ERFNet
+class Net(nn.Module):
     def __init__(self, num_classes, encoder=None):  #use encoder to pass pretrained encoder
         super().__init__()
 
@@ -150,4 +149,3 @@ class ERFNet(nn.Module):
         else:
             output = self.encoder(input)    #predict=False by default
             return self.decoder.forward(output)
-
