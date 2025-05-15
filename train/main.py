@@ -1,8 +1,3 @@
-# Main code for training ERFNet model in Cityscapes dataset
-# Sept 2017
-# Eduardo Romera
-#######################
-
 import os
 import random
 import time
@@ -19,7 +14,7 @@ from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, CenterCrop, Normalize, Resize, Pad
 from torchvision.transforms import ToTensor, ToPILImage
 
-from dataset import VOC12,cityscapes
+from dataset import VOC12, cityscapes
 from transform import Relabel, ToLabel, Colorize
 from visualize import Dashboard
 
@@ -27,6 +22,10 @@ import importlib
 from iouEval import iouEval, getColorEntry
 
 from shutil import copyfile
+
+from loss_functions import CrossEntropyLoss, FocalLoss, IsoMaxPlusLoss, LogitNormLoss
+from loss_functions import IsoMaxPlus_Focal_loss, IsoMaxPlus_CE_loss, LogitNorm_Focal_loss, LogitNorm_CE_loss
+
 
 NUM_CHANNELS = 3
 NUM_CLASSES = 20 #pascal=22, cityscapes=20
@@ -71,23 +70,30 @@ class MyCoTransform(object):
         return input, target
 
 
-class CrossEntropyLoss2d(torch.nn.Module):
+# this calculation has been given on ENet paper***
+# 19 semantic classes
+# 20th class is void, used to represent anomaly/background
+def compute_class_weights(dataloader, num_classes, c=1.02, ignore_index = 255): # excludes void classes
+    class_count = np.zeros(num_classes)
+    total = 0
+    for _, label in dataloader:
+        label = label.cpu().numpy()
+        label = label[label != ignore_index] # it excludes void classes
+        flat_label = label.flatten()
+        class_count += np.bincount(flat_label, minlength=num_classes)
+        total += flat_label.size
+    
+    propensity_score = class_count/total
+    class_weights = 1/ (np.log(c + propensity_score + 1e-6)) # we use 1e-6 to avoid log(0) ** old version was giving zeros
+    
+    class_weights[19] = 0.0
+    
 
-    def __init__(self, weight=None):
-        super().__init__()
-
-        self.loss = torch.nn.NLLLoss2d(weight)
-
-    def forward(self, outputs, targets):
-        return self.loss(torch.nn.functional.log_softmax(outputs, dim=1), targets)
+    return torch.from_numpy(class_weights).float()
 
 
-def train(args, model, enc=False):
-    best_acc = 0
-
-    #TODO: calculate weights by processing dataset histogram (now its being set by hand from the torch values)
-    #create a loder to run all images and calculate histogram of labels, then create weight array using class balancing
-
+# already given encoder decoder for ERFNet
+def get_class_weights(enc):
     weight = torch.ones(NUM_CLASSES)
     if (enc):
         weight[0] = 2.3653597831726	
@@ -129,8 +135,13 @@ def train(args, model, enc=False):
         weight[16] = 10.289801597595	
         weight[17] = 10.405355453491	
         weight[18] = 10.138095855713	
+    weight[19] = 0.0
+    return weight
 
-    weight[19] = 0
+
+def train(args, model, enc=False):
+    
+    best_acc = 0
 
     assert os.path.exists(args.datadir), "Error: datadir (dataset directory) could not be loaded"
 
@@ -141,13 +152,40 @@ def train(args, model, enc=False):
 
     loader = DataLoader(dataset_train, num_workers=args.num_workers, batch_size=args.batch_size, shuffle=True)
     loader_val = DataLoader(dataset_val, num_workers=args.num_workers, batch_size=args.batch_size, shuffle=False)
+    
+    
+    if args.model.lower() == "enet":
+        # ENet
+        weight = compute_class_weights(loader, NUM_CLASSES)
+    else:
+        # ERFNet
+        weight = get_class_weights(enc)
+    
 
     if args.cuda:
         weight = weight.cuda()
-    criterion = CrossEntropyLoss2d(weight)
+    
+    if args.loss == "focalloss":
+        criterion = FocalLoss()
+    elif args.loss == "isomaxplusloss":
+        criterion = IsoMaxPlusLoss()
+    elif args.loss == "logitnormloss":
+        criterion = LogitNormLoss()
+    elif args.loss == "isomaxplusfocalloss":
+        criterion = IsoMaxPlus_Focal_loss(1/2, 1/2)
+    elif args.loss == "isomaxplusceloss":
+        criterion = IsoMaxPlus_CE_loss(1/2, 1/2, weight)
+    elif args.loss == "logitnormfocalloss":
+        criterion = LogitNorm_Focal_loss(1/2, 1/2)
+    elif args.loss == "logitnormceloss":
+        criterion = LogitNorm_CE_loss(1/2, 1/2, weight)
+    elif args.loss == "crossentropyloss":
+        criterion = CrossEntropyLoss(weight)
+    
+    
     print(type(criterion))
 
-    savedir = f'../save/{args.savedir}'
+    savedir = args.savedir
 
     if (enc):
         automated_log_path = savedir + "/automated_log_encoder.txt"
@@ -169,21 +207,44 @@ def train(args, model, enc=False):
     #optimizer = Adam(model.parameters(), 5e-4, (0.9, 0.999),  eps=1e-08, weight_decay=2e-4)     ## scheduler 1
     optimizer = Adam(model.parameters(), 5e-4, (0.9, 0.999),  eps=1e-08, weight_decay=1e-4)      ## scheduler 2
 
+    
     start_epoch = 1
     if args.resume:
-        #Must load weights, optimizer, epoch and best value. 
         if enc:
-            filenameCheckpoint = savedir + '/checkpoint_enc.pth.tar'
+            filenameCheckpoint = os.path.join(savedir, 'checkpoint_enc.pth.tar')
         else:
-            filenameCheckpoint = savedir + '/checkpoint.pth.tar'
+            filenameCheckpoint = os.path.join(savedir, 'checkpoint.pth.tar')
 
-        assert os.path.exists(filenameCheckpoint), "Error: resume option was used but checkpoint was not found in folder"
+        assert os.path.exists(filenameCheckpoint), f"Error: checkpoint not found at {filenameCheckpoint}"
         checkpoint = torch.load(filenameCheckpoint)
         start_epoch = checkpoint['epoch']
-        model.load_state_dict(checkpoint['state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer'])
         best_acc = checkpoint['best_acc']
-        print("=> Loaded checkpoint at epoch {})".format(checkpoint['epoch']))
+
+        # Load model state_dict (allow partial load for flexibility)
+        missing_keys, unexpected_keys = model.load_state_dict(checkpoint['state_dict'], strict=False)
+        if missing_keys:
+            print(f"[Warning] Missing model keys: {missing_keys}")
+        if unexpected_keys:
+            print(f"[Warning] Unexpected model keys: {unexpected_keys}")
+
+        # Load optimizer state safely
+        try:
+            # Match optimizer param groups manually
+            for ckpt_group, opt_group in zip(checkpoint['optimizer']['param_groups'], optimizer.param_groups):
+                valid_params = [p for p in ckpt_group['params'] if p in optimizer.state]
+                opt_group['params'] = valid_params
+
+            # Copy state entries
+            for key, value in checkpoint['optimizer']['state'].items():
+                if key in optimizer.state:
+                    optimizer.state[key] = value
+
+            print("Optimizer state restored.")
+        except Exception as e:
+            print(f"[Warning] Optimizer state could not be fully restored: {e}")
+
+        print(f"=> Resumed from checkpoint at epoch {checkpoint['epoch']}")
+
 
     #scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor=0.5) # set up scheduler     ## scheduler 1
     lambda1 = lambda epoch: pow((1-((epoch-1)/args.num_epochs)),0.9)  ## scheduler 2
@@ -230,6 +291,10 @@ def train(args, model, enc=False):
             #print("targets", np.unique(targets[:, 0].cpu().data.numpy()))
 
             optimizer.zero_grad()
+            
+            if args.model == "bisenet":
+                outputs = outputs[1]
+            
             loss = criterion(outputs, targets[:, 0])
             loss.backward()
             optimizer.step()
@@ -289,9 +354,18 @@ def train(args, model, enc=False):
                 images = images.cuda()
                 labels = labels.cuda()
 
-            inputs = Variable(images, volatile=True)    #volatile flag makes it free backward or outputs for eval
-            targets = Variable(labels, volatile=True)
-            outputs = model(inputs, only_encode=enc) 
+            # inputs = Variable(images, volatile=True)    #volatile flag makes it free backward or outputs for eval
+            # targets = Variable(labels, volatile=True)
+            # outputs = model(inputs, only_encode=enc) 
+            
+            with torch.no_grad():
+                inputs = images
+                targets = labels
+                outputs = model(inputs, only_encode=enc)
+
+            
+            if args.model == "bisenet":
+                outputs = outputs[1]
 
             loss = criterion(outputs, targets[:, 0])
             epoch_loss_val.append(loss.data[0])
@@ -398,10 +472,11 @@ def main(args):
         myfile.write(str(args))
 
     #Load Model
-    assert os.path.exists(args.model + ".py"), "Error: model definition not found"
+    model_dir = "../train/"
+    assert os.path.exists(model_dir + args.model + ".py"), "Error: model definition not found"
     model_file = importlib.import_module(args.model)
     model = model_file.Net(NUM_CLASSES)
-    copyfile(args.model + ".py", savedir + '/' + args.model + ".py")
+    copyfile(model_dir + args.model + ".py", savedir + '/' + args.model + ".py")
     
     if args.cuda:
         model = torch.nn.DataParallel(model).cuda()
@@ -487,7 +562,7 @@ if __name__ == '__main__':
     parser.add_argument('--state')
 
     parser.add_argument('--port', type=int, default=8097)
-    parser.add_argument('--datadir', default=os.getenv("HOME") + "/datasets/cityscapes/")
+    parser.add_argument('--datadir', default= "../datasets/cityscapes/")
     parser.add_argument('--height', type=int, default=512)
     parser.add_argument('--num-epochs', type=int, default=150)
     parser.add_argument('--num-workers', type=int, default=4)
@@ -503,5 +578,6 @@ if __name__ == '__main__':
     parser.add_argument('--iouTrain', action='store_true', default=False) #recommended: False (takes more time to train otherwise)
     parser.add_argument('--iouVal', action='store_true', default=True)  
     parser.add_argument('--resume', action='store_true')    #Use this flag to load last checkpoint for training  
+    parser.add_argument('--loss', default = "crossentropyloss")
 
     main(parser.parse_args())
