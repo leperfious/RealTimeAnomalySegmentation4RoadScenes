@@ -286,7 +286,12 @@ def train(args, model, enc=False):
 
             inputs = Variable(images)
             targets = Variable(labels)
-            outputs = model(inputs, only_encode=enc)
+            # outputs = model(inputs, only_encode=enc)
+            if args.model.lower() in ["enet", "bisenet"]:
+                outputs = model(inputs)
+            else:  # erfnet or others that support only_encode
+                outputs = model(inputs, only_encode=enc)
+
 
             #print("targets", np.unique(targets[:, 0].cpu().data.numpy()))
 
@@ -361,7 +366,12 @@ def train(args, model, enc=False):
             with torch.no_grad():
                 inputs = images
                 targets = labels
-                outputs = model(inputs, only_encode=enc)
+                # outputs = model(inputs, only_encode=enc)
+                if args.model.lower() in ["enet", "bisenet"]:
+                    outputs = model(inputs)
+                else:  # erfnet or others that support only_encode
+                    outputs = model(inputs, only_encode=enc)
+
 
             
             if args.model == "bisenet":
