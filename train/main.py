@@ -35,11 +35,12 @@ image_transform = ToPILImage()
 
 #Augmentations - different function implemented to perform random augments on both image and target
 class MyCoTransform(object):
-    def __init__(self, enc, augment=True, height=512):
+    def __init__(self, enc, model_name, augment=True, height=512):
         self.enc=enc
         self.augment = augment
+        self.model_name = model_name
         self.height = height
-        pass
+        # pass
     def __call__(self, input, target):
         # do something to both images
         input =  Resize(self.height, Image.BILINEAR)(input)
@@ -62,8 +63,14 @@ class MyCoTransform(object):
             target = target.crop((0, 0, target.size[0]-transX, target.size[1]-transY))   
 
         input = ToTensor()(input)
-        if (self.enc):
-            target = Resize(int(self.height/8), Image.NEAREST)(target)
+        # need to change it for bisenet, enet, erfnet
+        # if (self.enc):
+        #     target = Resize(int(self.height/8), Image.NEAREST)(target)
+        
+        # Resize label to lower res only if the model is NOT BiSeNet and only in encoder mode
+        if self.enc and self.model_name.lower() != 'bisenet':
+            target = Resize(int(self.height / 8), Image.NEAREST)(target)
+
         target = ToLabel()(target)
         target = Relabel(255, 19)(target)
 
@@ -145,8 +152,8 @@ def train(args, model, enc=False):
 
     assert os.path.exists(args.datadir), "Error: datadir (dataset directory) could not be loaded"
 
-    co_transform = MyCoTransform(enc, augment=True, height=args.height)#1024)
-    co_transform_val = MyCoTransform(enc, augment=False, height=args.height)#1024)
+    co_transform = MyCoTransform(enc, args.model.lower(), augment=True, height=args.height)#1024)
+    co_transform_val = MyCoTransform(enc, args.model.lower(), augment=False, height=args.height)#1024)
     dataset_train = cityscapes(args.datadir, co_transform, 'train')
     dataset_val = cityscapes(args.datadir, co_transform_val, 'val')
 
@@ -301,10 +308,11 @@ def train(args, model, enc=False):
                 outputs = outputs[1]
             
             loss = criterion(outputs, targets[:, 0])
+            # loss = criterion(outputs, targets)
             loss.backward()
             optimizer.step()
 
-            epoch_loss.append(loss.data[0])
+            epoch_loss.append(loss.item())
             time_train.append(time.time() - start_time)
 
             if (doIouTrain):
@@ -378,7 +386,7 @@ def train(args, model, enc=False):
                 outputs = outputs[1]
 
             loss = criterion(outputs, targets[:, 0])
-            epoch_loss_val.append(loss.data[0])
+            epoch_loss_val.append(loss.item())
             time_val.append(time.time() - start_time)
 
 
@@ -541,29 +549,40 @@ def main(args):
     """
 
     #train(args, model)
-    if (not args.decoder):
+    if args.model.lower() == "erfnet" and not args.decoder:
         print("========== ENCODER TRAINING ===========")
         model = train(args, model, True) #Train encoder
-    #CAREFUL: for some reason, after training encoder alone, the decoder gets weights=0. 
-    #We must reinit decoder weights or reload network passing only encoder in order to train decoder
-    print("========== DECODER TRAINING ===========")
-    if (not args.state):
-        if args.pretrainedEncoder:
-            print("Loading encoder pretrained in imagenet")
-            from erfnet_imagenet import ERFNet as ERFNet_imagenet
-            pretrainedEnc = torch.nn.DataParallel(ERFNet_imagenet(1000))
-            pretrainedEnc.load_state_dict(torch.load(args.pretrainedEncoder)['state_dict'])
-            pretrainedEnc = next(pretrainedEnc.children()).features.encoder
-            if (not args.cuda):
-                pretrainedEnc = pretrainedEnc.cpu()     #because loaded encoder is probably saved in cuda
-        else:
-            pretrainedEnc = next(model.children()).encoder
-        model = model_file.Net(NUM_CLASSES, encoder=pretrainedEnc)  #Add decoder to encoder
-        if args.cuda:
-            model = torch.nn.DataParallel(model).cuda()
+        #CAREFUL: for some reason, after training encoder alone, the decoder gets weights=0. 
+        #We must reinit decoder weights or reload network passing only encoder in order to train decoder
+        
+        print("========== DECODER TRAINING ===========")
+        if (not args.state):
+            if args.pretrainedEncoder:
+                print("Loading encoder pretrained in imagenet")
+                from erfnet_imagenet import ERFNet as ERFNet_imagenet
+                pretrainedEnc = torch.nn.DataParallel(ERFNet_imagenet(1000))
+                pretrainedEnc.load_state_dict(torch.load(args.pretrainedEncoder)['state_dict'])
+                pretrainedEnc = next(pretrainedEnc.children()).features.encoder
+                if (not args.cuda):
+                    pretrainedEnc = pretrainedEnc.cpu()     #because loaded encoder is probably saved in cuda
+            else:
+                pretrainedEnc = next(model.children()).encoder
+                
+                
+            model = model_file.Net(NUM_CLASSES, encoder=pretrainedEnc)  #Add decoder to encoder
+            
+            if args.cuda:
+                model = torch.nn.DataParallel(model).cuda()
+                
         #When loading encoder reinitialize weights for decoder because they are set to 0 when training dec
-    model = train(args, model, False)   #Train decoder
-    print("========== TRAINING FINISHED ===========")
+        model = train(args, model, False)   #Train decoder
+        print("========== TRAINING FINISHED ===========")
+
+    else:
+        print("========== FULL TRAINING ==========")
+        model = train(args, model, False)
+        print("========== TRAINING FINISHED ==========")
+
 
 if __name__ == '__main__':
     parser = ArgumentParser()

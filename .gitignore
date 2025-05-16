@@ -1,2 +1,7 @@
 /datasets/cityscapes
 /datasets/validation_dataset
+
+/newtrainings/bisenet/checkpoint_enc.pth.tar
+/newtrainings/bisenet/model_best_enc.pth.tar
+/newtrainings/bisenet/model_encoder_best.pth
+
