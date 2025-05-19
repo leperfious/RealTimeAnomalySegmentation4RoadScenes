@@ -41,10 +41,14 @@ class VOC12(Dataset):
     def __getitem__(self, index):
         filename = self.filenames[index]
 
-        with open(image_path(self.images_root, filename, '.jpg'), 'rb') as f:
-            image = load_image(f).convert('RGB')
-        with open(image_path(self.labels_root, filename, '.png'), 'rb') as f:
-            label = load_image(f).convert('P')
+        # with open(image_path(self.images_root, filename, '.jpg'), 'rb') as f:
+        #     image = load_image(f).convert('RGB')
+        # with open(image_path(self.labels_root, filename, '.png'), 'rb') as f:
+        #     label = load_image(f).convert('P')
+        
+        image = Image.open(image_path(self.images_root, filename, '.jpg')).convert('RGB').copy()
+        label = Image.open(image_path(self.labels_root, filename, '.png')).convert('P').copy()
+
 
         if self.input_transform is not None:
             image = self.input_transform(image)
@@ -90,10 +94,13 @@ class cityscapes(Dataset):
         # with open(image_path_city(self.labels_root, filenameGt), 'rb') as f:
         #     label = load_image(f).convert('P')
         
-        with open(filename, 'rb') as f:
-            image = load_image(f).convert('RGB')
-        with open(filenameGt, 'rb') as f:
-            label = load_image(f).convert('P')
+        # with open(filename, 'rb') as f:
+        #     image = load_image(f).convert('RGB')
+        # with open(filenameGt, 'rb') as f:
+        #     label = load_image(f).convert('P')
+        
+        image = Image.open(filename).convert('RGB').copy()
+        label = Image.open(filenameGt).convert('P').copy()
         
         
         if self.co_transform is not None:
