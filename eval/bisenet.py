@@ -250,9 +250,9 @@ class FeatureFusionModule(nn.Module):
         return wd_params, nowd_params
 
 
-class Net(nn.Module):
+class BiSeNet(nn.Module): # name changed
     def __init__(self, n_classes, aux_mode='train', *args, **kwargs):
-        super(Net, self).__init__()
+        super(BiSeNet, self).__init__()
         self.cp = ContextPath()
         self.sp = SpatialPath()
         self.ffm = FeatureFusionModule(256, 256)
@@ -300,15 +300,3 @@ class Net(nn.Module):
                 wd_params += child_wd_params
                 nowd_params += child_nowd_params
         return wd_params, nowd_params, lr_mul_wd_params, lr_mul_nowd_params
-
-if __name__ == "__main__":
-    net = Net(19)
-    net.cuda()
-    net.eval()
-    in_ten = torch.randn(16, 3, 640, 480).cuda()
-    out, out16, out32 = net(in_ten)
-    print(out.shape)
-    print(out16.shape)
-    print(out32.shape)
-
-    net.get_params()
