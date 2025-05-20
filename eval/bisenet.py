@@ -250,9 +250,9 @@ class FeatureFusionModule(nn.Module):
         return wd_params, nowd_params
 
 
-class BiSeNet(nn.Module): # name changed
+class Net(nn.Module):
     def __init__(self, n_classes, aux_mode='train', *args, **kwargs):
-        super(BiSeNet, self).__init__()
+        super(Net, self).__init__()
         self.cp = ContextPath()
         self.sp = SpatialPath()
         self.ffm = FeatureFusionModule(256, 256)

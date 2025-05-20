@@ -14,7 +14,8 @@ from torchvision.transforms import Compose, CenterCrop, Normalize, Resize
 from torchvision.transforms import ToTensor, ToPILImage
 
 from dataset import cityscapes
-from erfnet import ERFNet
+# from erfnet import ERFNet
+
 from transform import Relabel, ToLabel, Colorize
 from iouEval import iouEval, getColorEntry
 
@@ -22,6 +23,7 @@ NUM_CHANNELS = 3
 NUM_CLASSES = 20
 
 image_transform = ToPILImage()
+
 input_transform_cityscapes = Compose([
     Resize(512, Image.BILINEAR),
     ToTensor(),
@@ -32,20 +34,24 @@ target_transform_cityscapes = Compose([
     Relabel(255, 19),   #ignore label to 19
 ])
 
-def load_my_state_dict(model, state_dict):  #custom function to load model when not all dict elements
-        own_state = model.state_dict()
-        for name, param in state_dict.items():
-            if name not in own_state:
-                if name.startswith("module."):
-                    own_state[name.split("module.")[-1]].copy_(param)
-                else:
-                    print(name, " not loaded")
-                    continue
-            else:
-                own_state[name].copy_(param)
-        return model
+def load_my_state_dict(model, state_dict, loadModel):  #custom function to load model when not all dict elements
+    own_state = model.state_dict()
+    for name, param in state_dict.items():
+        if name in own_state:
+            own_state[name].copy_(param)
+        elif name.startswith("module.") and name[7:] in own_state: # [7:] to delete module.encoder.weight to encoder.weight -- hardcoded :p
+            own_state[name[7:]].copy_param()
+        elif loadModel != "erfnet.py" and ("module." + name) in own_state:
+            own_state["module." + name].copy_param()
+        else:
+            print(f"{name} not loaded.")
+    return model
 
 def main(args):
+    
+    model_module = importlib.import_module(args.loadModel[:-3]) # name are not Enet or Erfnet, they are Net
+    model = model_module.Net(NUM_CLASSES)
+
 
     modelpath = os.path.join(args.loadDir, args.loadModel)
     weightspath = os.path.join(args.loadDir, args.loadWeights)
@@ -53,39 +59,26 @@ def main(args):
     print ("Loading model: " + modelpath)
     print ("Loading weights: " + weightspath)
 
-    model = ERFNet(NUM_CLASSES)
 
-    # model = torch.nn.DataParallel(model)
-    if (not args.cpu):
+    if not args.cpu:
         model = torch.nn.DataParallel(model).cuda()
-
-    # to add
-
-    # if not os.path.exists(args.datadir):
-    #     raise FileNotFoundError(f"Dataset directory not found: {args.datadir}")
-    # print(f"Using dataset directory: {args.datadir}")
-
-    # Update torch.load to handle warning
-    try:
-        model = load_my_state_dict(model, torch.load(weightspath, map_location=lambda storage, loc: storage, weights_only=True))
-    except TypeError:  # For older PyTorch versions
-        model = load_my_state_dict(model, torch.load(weightspath, map_location=lambda storage, loc: storage))
-
-
-    # model = load_my_state_dict(model, torch.load(weightspath, map_location=lambda storage, loc: storage))
-    # print ("Model and weights LOADED successfully")
-
+    
+    
+    model = load_my_state_dict(model, torch.load(weightspath, map_location='cpu', weights_only=True), args.loadModel)
+    
     model.eval() # evaluation starts
 
-    # if(not os.path.exists(args.datadir)):
-    #     print ("Error: datadir could not be loaded")
-    #     return
 
-
-    loader = DataLoader(cityscapes(args.datadir, input_transform_cityscapes, target_transform_cityscapes, subset=args.subset),
+    loader = DataLoader(cityscapes(args.datadir, input_transform_cityscapes, target_transform_cityscapes, 
+                                   subset=args.subset),
                          num_workers=args.num_workers, batch_size=args.batch_size, shuffle=False)
 
-    iouEvalVal = iouEval(NUM_CLASSES)
+
+    # if we do it with the void, it is different
+    if args.void:
+        iouEvalVal = iouEval(NUM_CLASSES, ignoreIndex=20) # include void, 20 in total
+    else:
+        iouEvalVal = iouEval(NUM_CLASSES, ignoreIndex=19) # ignore void
 
     start = time.time()
 
@@ -99,6 +92,9 @@ def main(args):
 
         with torch.no_grad():
             outputs = model(images)
+        
+        if args.loadModel == "bisenet.py":
+            outputs = outputs[1]
 
         # ________________________ msp, max_logit, max_entropy _______________________ starts
         # size is 512x1024
@@ -147,27 +143,33 @@ def main(args):
     results_file.write(f"Method used: {args.method}\n")
     results_file.write(f"Temperature scale used: {args.temperature}\n")
     results_file.write("Per-Class IoU:\n")
-    for i, label in enumerate(["Road", 
-                               "Sidewalk", 
-                               "Building", 
-                               "Wall", 
-                               "Fence", 
-                               "Pole", 
-                               "Traffic Light", 
-                               "Traffic Sign", 
-                               "Vegetation", 
-                               "Terrain", 
-                               "Sky", 
-                               "Person", 
-                               "Rider", 
-                               "Car", 
-                               "Truck", 
-                               "Bus", 
-                               "Train", 
-                               "Motorcycle", 
-                               "Bicycle"]):
+    class_labels=["Road", 
+                "Sidewalk", 
+                "Building", 
+                "Wall", 
+                "Fence", 
+                "Pole", 
+                "Traffic Light", 
+                "Traffic Sign", 
+                "Vegetation", 
+                "Terrain", 
+                "Sky", 
+                "Person", 
+                "Rider", 
+                "Car", 
+                "Truck", 
+                "Bus", 
+                "Train", 
+                "Motorcycle", 
+                "Bicycle"
+                ]
+    if args.void:
+        class_labels.append("Void")
+    
+    for i, label in enumerate(class_labels):
         print(iou_classes_str[i], label)
         results_file.write(f"{label}: {iou_classes[i]*100:.2f}%\n")
+    
     print("======================================")
     print("MEAN IoU:", f'{iouVal*100:.2f}', "%")
     results_file.write(f"MEAN IoU: {iouVal*100:.2f}%\n")
@@ -186,4 +188,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--cpu', action='store_true')
     parser.add_argument('--method', default='msp', choices=['msp', 'max_logit', 'max_entropy'], help='Method for anomaly detection')
+    parser.add_argument('--void', action='store_true') # this one works for 19 and 19+1
     main(parser.parse_args())
+    
+    # when running python adding --void with include it, without --void, it will exclude

@@ -1,0 +1,24 @@
+Method used: msp
+Temperature scale used: 1
+Per-Class IoU:
+Road: 81.55%
+Sidewalk: 60.87%
+Building: 79.64%
+Wall: 34.12%
+Fence: 24.53%
+Pole: 40.35%
+Traffic Light: 41.34%
+Traffic Sign: 43.01%
+Vegetation: 84.50%
+Terrain: 43.42%
+Sky: 83.88%
+Person: 51.31%
+Rider: 39.71%
+Car: 75.46%
+Truck: 37.12%
+Bus: 54.10%
+Train: 33.19%
+Motorcycle: 12.35%
+Bicycle: 45.13%
+Void: 0.00%
+MEAN IoU: 48.28%
