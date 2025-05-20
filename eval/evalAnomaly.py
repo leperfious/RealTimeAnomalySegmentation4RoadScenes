@@ -7,7 +7,8 @@ import random
 
 from PIL import Image
 import numpy as np
-from erfnet import ERFNet
+# from erfnet import ERFNet
+import importlib
 
 
 import os.path as osp
@@ -51,18 +52,18 @@ torch.backends.cudnn.benchmark = True
 
 
 # OK - no extra
-def load_my_state_dict(model, state_dict):  #custom function to load model when not all dict elements
-        own_state = model.state_dict()
-        for name, param in state_dict.items():
-            if name not in own_state:
-                if name.startswith("module."):
-                    own_state[name.split("module.")[-1]].copy_(param)
-                else:
-                    print(name, " not loaded")
-                    continue
-            else:
-                own_state[name].copy_(param)
-        return model
+def load_my_state_dict(model, state_dict, loadModel):  #custom function to load model when not all dict elements
+    own_state = model.state_dict()
+    for name, param in state_dict.items():
+        if name in own_state:
+            own_state[name].copy_(param)
+        elif name.startswith("module.") and name[7:] in own_state: # [7:] to delete module.encoder.weight to encoder.weight -- hardcoded :p
+            own_state[name[7:]].copy_param()
+        elif loadModel != "erfnet.py" and ("module." + name) in own_state:
+            own_state["module." + name].copy_param()
+        else:
+            print(f"{name} not loaded.")
+    return model
 
 
 
@@ -80,6 +81,7 @@ def main():
     parser.add_argument('--num-workers', type=int, default=4)
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--cpu', action='store_true')
+    parser.add_argument('--void', action='store_true') # for w void or 19
 
     args = parser.parse_args()
     
@@ -96,22 +98,21 @@ def main():
     file = open(results_file, 'a')
 
 
-
-    # TO ADD MORE MODEL - Start ***
-
-    net = ERFNet(NUM_CLASSES)
-
+    model_module = importlib.import_module(args.loadModel[:-3]) # name are not Enet or Erfnet, they are Net
+    model_class = getattr(model_module, "Net") # ------- 
+    net = model_module.Net(NUM_CLASSES)
+    
     if not args.cpu:
         model = torch.nn.DataParallel(net).cuda()
     else:
         model = net
-
-
+        
+   
     # Update torch.load to handle warning
     if args.loadWeights.endswith('.tar'):
-        model = load_my_state_dict(model, torch.load(weightspath)['state_dict'])
+        model = load_my_state_dict(model, torch.load(weightspath)['state_dict'], args.loadModel)
     else:
-        model = load_my_state_dict(model, torch.load(weightspath))
+        model = load_my_state_dict(model, torch.load(weightspath), args.loadModel)
     print('Model and weights LOADED successfully')
     
 
@@ -146,6 +147,8 @@ def main():
                 
             with torch.no_grad():
                 outputs = model(image)  # [1, C, H, W]
+            if args.loadModel == "bisenet.py":
+                outputs = outputs[1]
 
 
             # ________________________ msp, max_logit, max_entropy _______________________ starts
@@ -200,22 +203,6 @@ def main():
             ood_gts = np.array(mask)
 
             
-            # # Dataset adjustments, added here all datasets from validation
-            # if "RoadAnomaly" in pathGT or "RoadAnomaly21" in pathGT:
-            #     ood_gts = np.where((ood_gts==2), 1, ood_gts)
-
-            # # I added manually, it was different
-            # if "FS_LostFound_full" in pathGT:
-            #     ood_gts = np.where((ood_gts==0), 0, ood_gts)
-            #     ood_gts = np.where((ood_gts==1), 0, ood_gts)
-            #     ood_gts = np.where((ood_gts>1)&(ood_gts<201), 1, ood_gts)
-            #     ood_gts = np.where((ood_gts == 255), 0, ood_gts)
-
-            # # I added manually, it was not here
-            # if "fs_static" in pathGT or "RoadObsticle21" in pathGT:
-            #     ood_gts = np.where((ood_gts==14), 1, ood_gts)
-            #     ood_gts = np.where((ood_gts<20), 0, ood_gts)
-            #     ood_gts = np.where((ood_gts==255), 0, ood_gts)
             if "RoadAnomaly" in pathGT:
                 ood_gts = np.where((ood_gts==2), 1, ood_gts)
             if "LostAndFound" in pathGT:
