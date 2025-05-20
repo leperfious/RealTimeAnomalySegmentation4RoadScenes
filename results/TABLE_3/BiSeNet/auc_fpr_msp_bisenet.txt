@@ -1,5 +1,0 @@
-Method: msp      Temperature: 1       Dataset: FS_LostFound_full   AUPRC score: 2.23   FPR@TPR95: 51.05
-Method: msp      Temperature: 1       Dataset: fs_static   AUPRC score: 9.522   FPR@TPR95: 35.419
-Method: msp      Temperature: 1       Dataset: RoadAnomaly   AUPRC score: 16.002   FPR@TPR95: 80.026
-Method: msp      Temperature: 1       Dataset: RoadAnomaly21   AUPRC score: 28.609   FPR@TPR95: 59.892
-Method: msp      Temperature: 1       Dataset: RoadObsticle21   AUPRC score: 14.998   FPR@TPR95: 28.394
