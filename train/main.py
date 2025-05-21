@@ -168,6 +168,12 @@ def train(args, model, enc=False):
         # ERFNet
         weight = get_class_weights(enc)
     
+    # self.output_conv = nn.ConvTranspose2d( 16, num_classes, 2, stride=2, padding=0, output_padding=0, bias=True)
+    # num_features are 16 for erfnet final conv layer
+    if args.cuda:
+        NUM_FEATURES = model.module.output_conv.in_channels
+    else:
+        NUM_FEATURES = model.output_conv.in_channels
 
     if args.cuda:
         weight = weight.cuda()
@@ -175,13 +181,13 @@ def train(args, model, enc=False):
     if args.loss == "focalloss":
         criterion = FocalLoss()
     elif args.loss == "isomaxplusloss":
-        criterion = IsoMaxPlusLoss()
+        criterion = IsoMaxPlusLoss(NUM_FEATURES, NUM_CLASSES)
     elif args.loss == "logitnormloss":
         criterion = LogitNormLoss()
     elif args.loss == "isomaxplusfocalloss":
-        criterion = IsoMaxPlus_Focal_loss(1/2, 1/2)
+        criterion = IsoMaxPlus_Focal_loss(NUM_FEATURES, NUM_CLASSES, 1/2, 1/2)
     elif args.loss == "isomaxplusceloss":
-        criterion = IsoMaxPlus_CE_loss(1/2, 1/2, weight)
+        criterion = IsoMaxPlus_CE_loss(NUM_FEATURES, NUM_CLASSES, 1/2, 1/2, weight)
     elif args.loss == "logitnormfocalloss":
         criterion = LogitNorm_Focal_loss(1/2, 1/2)
     elif args.loss == "logitnormceloss":
