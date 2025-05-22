@@ -29,6 +29,9 @@ from loss_functions import IsoMaxPlus_Focal_loss, IsoMaxPlus_CE_loss, LogitNorm_
 
 NUM_CHANNELS = 3
 NUM_CLASSES = 20 #pascal=22, cityscapes=20
+# # self.output_conv = nn.ConvTranspose2d( 16, num_classes, 2, stride=2, padding=0, output_padding=0, bias=True)
+# # num_features are 16 for erfnet final conv layer
+# NUM_FEATURES = 16
 
 color_transform = Colorize(NUM_CLASSES)
 image_transform = ToPILImage()
@@ -168,12 +171,17 @@ def train(args, model, enc=False):
         # ERFNet
         weight = get_class_weights(enc)
     
-    # self.output_conv = nn.ConvTranspose2d( 16, num_classes, 2, stride=2, padding=0, output_padding=0, bias=True)
-    # num_features are 16 for erfnet final conv layer
-    if args.cuda:
-        NUM_FEATURES = model.module.output_conv.in_channels
-    else:
-        NUM_FEATURES = model.output_conv.in_channels
+    
+    
+    try:
+        if args.cuda:
+            NUM_FEATURES = model.module.output_conv.in_channels
+        else:
+            NUM_FEATURES = model.output_conv.in_channels
+    except AttributeError:
+        NUM_FEATURES = 20  
+
+    
 
     if args.cuda:
         weight = weight.cuda()
@@ -194,6 +202,9 @@ def train(args, model, enc=False):
         criterion = LogitNorm_CE_loss(1/2, 1/2, weight)
     elif args.loss == "crossentropyloss":
         criterion = CrossEntropyLoss(weight)
+        
+    if args.cuda:
+        criterion = criterion.cuda()
     
     
     print(type(criterion))
@@ -504,7 +515,8 @@ def main(args):
     
     if args.cuda:
         model = torch.nn.DataParallel(model).cuda()
-    
+        
+     
     if args.state:
         #if args.state is provided then load this state for training
         #Note: this only loads initialized weights. If you want to resume a training use "--resume" option!!
