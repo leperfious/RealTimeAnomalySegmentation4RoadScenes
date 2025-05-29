@@ -1,0 +1,15 @@
+Method: msp      Temperature: 1       Dataset: FS_LostFound_full   AUPRC score: 3.295   FPR@TPR95: 61.05
+Method: msp      Temperature: 1       Dataset: fs_static   AUPRC score: 9.446   FPR@TPR95: 47.049
+Method: msp      Temperature: 1       Dataset: RoadAnomaly   AUPRC score: 12.068   FPR@TPR95: 79.465
+Method: msp      Temperature: 1       Dataset: RoadAnomaly21   AUPRC score: 22.46   FPR@TPR95: 73.528
+Method: msp      Temperature: 1       Dataset: RoadObsticle21   AUPRC score: 7.598   FPR@TPR95: 23.402
+Method: max_logit      Temperature: 1       Dataset: FS_LostFound_full   AUPRC score: 4.241   FPR@TPR95: 45.858
+Method: max_logit      Temperature: 1       Dataset: fs_static   AUPRC score: 14.937   FPR@TPR95: 39.495
+Method: max_logit      Temperature: 1       Dataset: RoadAnomaly   AUPRC score: 11.591   FPR@TPR95: 88.592
+Method: max_logit      Temperature: 1       Dataset: RoadAnomaly21   AUPRC score: 19.538   FPR@TPR95: 93.831
+Method: max_logit      Temperature: 1       Dataset: RoadObsticle21   AUPRC score: 3.932   FPR@TPR95: 31.142
+Method: max_entropy      Temperature: 1       Dataset: FS_LostFound_full   AUPRC score: 3.557   FPR@TPR95: 60.48
+Method: max_entropy      Temperature: 1       Dataset: fs_static   AUPRC score: 10.159   FPR@TPR95: 46.538
+Method: max_entropy      Temperature: 1       Dataset: RoadAnomaly   AUPRC score: 12.378   FPR@TPR95: 79.566
+Method: max_entropy      Temperature: 1       Dataset: RoadAnomaly21   AUPRC score: 22.723   FPR@TPR95: 74.099
+Method: max_entropy      Temperature: 1       Dataset: RoadObsticle21   AUPRC score: 7.302   FPR@TPR95: 23.429
